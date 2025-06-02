@@ -1,14 +1,13 @@
-from flask import Blueprint, request, jsonify
-from google_sheets_utils import sheets_manager, conectar_hoja
+from flask import Flask, request, jsonify
+from google_sheets_utils import sheets_manager
 from config import Config
 from datetime import datetime
 import requests
 import logging
 
-webhook_blueprint = Blueprint("webhook", __name__)
+app = Flask(__name__)
 logger = logging.getLogger(__name__)
 
-# Rate limiting
 class RateLimiter:
     def __init__(self):
         self.message_counts = {}
@@ -33,17 +32,12 @@ class RateLimiter:
 
 rate_limiter = RateLimiter()
 
-# Bot de WhatsApp
 class WhatsAppBot:
     def __init__(self):
         self.responses = Config.DEFAULT_RESPONSES
 
     def get_response(self, mensaje):
         mensaje = mensaje.lower()
-        if "precio" in mensaje:
-            return "Nuestros servicios empiezan desde $200. ¿Deseas agendar una llamada?"
-        elif "cita" in mensaje or "agendar" in mensaje:
-            return "Podemos reunirnos el lunes a las 10am o miércoles a las 2pm. ¿Cuál prefieres?"
         for clave, respuesta in self.responses.items():
             if clave != "default" and clave in mensaje:
                 return respuesta
@@ -66,12 +60,12 @@ class WhatsAppBot:
 
 bot = WhatsAppBot()
 
-@webhook_blueprint.route("/webhook", methods=["POST"])
-def recibir_mensaje():
+@app.route("/webhook", methods=["POST"])
+def recibir():
     if not request.is_json:
         return jsonify({"error": "Formato inválido"}), 400
 
-    data = request.get_json()
+    data = request.json
     mensaje = data.get("messageData", {}).get("textMessageData", {}).get("textMessage", "")
     telefono = data.get("senderData", {}).get("chatId", "").replace("@c.us", "")
 
@@ -83,20 +77,6 @@ def recibir_mensaje():
 
     sheets_manager.update_contact(telefono)
     sheets_manager.log_message(telefono, mensaje, "Recibido", "WhatsApp")
-
-    # registrar también en hoja 'Mensajes'
-    hoja_mensajes = conectar_hoja("Mensajes")
-    hoja_mensajes.append_row([
-        telefono,
-        datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        "Recibido",
-        "WhatsApp",
-        mensaje,
-        "Pendiente",
-        "Sí",
-        "Bot",
-        ""
-    ])
 
     respuesta = bot.get_response(mensaje)
     bot.send_message(telefono, respuesta)
