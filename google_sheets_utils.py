@@ -1,37 +1,24 @@
+import gspread
 import os
 import json
-import gspread
-from oauth2client.service_account import ServiceAccountCredentials
 from datetime import datetime
+from oauth2client.service_account import ServiceAccountCredentials
 
-# Ámbitos de acceso autorizados para trabajar con Google Sheets y Drive
 SCOPE = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-
-# Leer el ID de la hoja desde variable de entorno
-SHEET_ID = os.getenv("GOOGLE_SHEET_ID")
-
+SHEET_ID = "1RggJz98tnR86fo_AspwLWUVOIABn6vVrvojAkfQAqHc"  # Tu ID real
 
 def obtener_credenciales():
-    """Carga las credenciales desde la variable de entorno GOOGLE_CREDENTIALS_JSON"""
-    try:
-        json_keyfile = os.getenv("GOOGLE_CREDENTIALS_JSON")
-        if not json_keyfile:
-            raise ValueError("La variable de entorno GOOGLE_CREDENTIALS_JSON no está definida.")
-        creds_dict = json.loads(json_keyfile)
-        creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, SCOPE)
-        return creds
-    except Exception as e:
-        print("❌ Error cargando credenciales:", e)
-        raise
-
+    cred_json = os.getenv("GOOGLE_CREDENTIALS_JSON")
+    if not cred_json:
+        raise ValueError("La variable de entorno GOOGLE_CREDENTIALS_JSON no está definida.")
+    cred_dict = json.loads(cred_json)
+    return ServiceAccountCredentials.from_json_keyfile_dict(cred_dict, SCOPE)
 
 def conectar_hoja(nombre_hoja):
-    """Conecta con una hoja específica por nombre"""
     creds = obtener_credenciales()
     cliente = gspread.authorize(creds)
     hoja = cliente.open_by_key(SHEET_ID).worksheet(nombre_hoja)
     return hoja
-
 
 class SheetsManager:
     def __init__(self):
@@ -39,22 +26,28 @@ class SheetsManager:
         self.mensajes = conectar_hoja("Mensajes")
 
     def update_contact(self, telefono):
-        contactos = self.contactos.get_all_records()
-        if not any(c["Teléfono"] == telefono for c in contactos):
-            self.contactos.append_row([telefono, datetime.now().strftime("%Y-%m-%d %H:%M:%S")])
+        registros = self.contactos.get_all_records()
+        if not any(c["ID"] == telefono for c in registros):
+            now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            self.contactos.append_row([telefono, now])
 
     def log_message(self, telefono, mensaje, tipo, canal):
         try:
+            now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             self.mensajes.append_row([
-                telefono,
-                mensaje,
-                tipo,
-                canal,
-                datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                telefono,       # ID_Contacto
+                now,            # Fecha
+                tipo,           # Tipo: "Recibido" o "Enviado"
+                canal,          # Canal: "WhatsApp"
+                mensaje,        # Mensaje
+                "Pendiente",    # Estado_Respuesta
+                "Sí",           # Automatizado
+                "Bot",          # Responsable
+                ""              # Observaciones
             ])
             return True
         except Exception as e:
-            print("❌ Error al registrar mensaje:", e)
+            print("Error al registrar mensaje:", e)
             return False
 
     def get_analytics_data(self):
@@ -65,6 +58,4 @@ class SheetsManager:
             "recibidos": sum(1 for m in mensajes if m["Tipo"] == "Recibido")
         }
 
-
-# Instancia global para usar en otras partes del sistema
 sheets_manager = SheetsManager()
