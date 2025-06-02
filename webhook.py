@@ -64,11 +64,9 @@ bot = WhatsAppBot()
 def recibir():
     if not request.is_json:
         return jsonify({"error": "Formato inválido"}), 400
-
     data = request.json
     mensaje = data.get("messageData", {}).get("textMessageData", {}).get("textMessage", "")
     telefono = data.get("senderData", {}).get("chatId", "").replace("@c.us", "")
-
     if not telefono or not mensaje:
         return jsonify({"error": "Datos incompletos"}), 400
 
