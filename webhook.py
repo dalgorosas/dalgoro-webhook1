@@ -76,3 +76,61 @@ def recibir():
     respuesta = bot.get_response(mensaje)
     bot.send_message(telefono, respuesta)
     return jsonify({"status": "ok"}), 200
+
+from flask import Flask, request
+from google_sheets_utils import conectar_hoja
+from datetime import datetime
+import requests
+
+app = Flask(__name__)
+
+# 💬 Lógica del webhook
+@app.route('/webhook', methods=['POST'])
+def recibir_mensaje():
+    data = request.json
+
+    mensaje = data.get("messageData", {}).get("textMessageData", {}).get("textMessage", "").lower()
+    telefono = data.get("senderData", {}).get("chatId", "").replace("@c.us", "")
+    fecha_hora = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    # Registrar mensaje en hoja 'Mensajes'
+    hoja_mensajes = conectar_hoja("Mensajes")
+    hoja_mensajes.append_row([
+        telefono,                 # ID_Contacto (usamos teléfono por ahora)
+        fecha_hora,
+        "Recibido",
+        "WhatsApp",
+        mensaje,
+        "Pendiente",
+        "Sí",
+        "Bot",
+        ""
+    ])
+
+    # Lógica de respuesta automática
+    if "precio" in mensaje:
+        respuesta = "Nuestros servicios empiezan desde $200. ¿Deseas agendar una llamada?"
+    elif "cita" in mensaje or "agendar" in mensaje:
+        respuesta = "Podemos reunirnos el lunes a las 10am o miércoles a las 2pm. ¿Cuál prefieres?"
+    else:
+        respuesta = "Gracias por escribirnos. ¿En qué te gustaría que te ayudemos?"
+
+    enviar_respuesta(telefono, respuesta)
+
+    return "ok", 200
+
+
+# Función para responder vía Green API
+def enviar_respuesta(numero, mensaje):
+    url = "https://api.green-api.com/waInstance7105252633/sendMessage/67c2dece454947aba9d8d44daca573ccfa41c248c0424464a8"
+    payload = {
+        "chatId": f"{numero}@c.us",
+        "message": mensaje
+    }
+    headers = {"Content-Type": "application/json"}
+    requests.post(url, json=payload, headers=headers)
+
+
+# Ejecutar servidor localmente
+if __name__ == '__main__':
+    app.run(port=5000)
