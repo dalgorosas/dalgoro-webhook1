@@ -4,8 +4,11 @@ import json
 from datetime import datetime
 from oauth2client.service_account import ServiceAccountCredentials
 
+# Ámbitos de acceso para Google Sheets y Drive
 SCOPE = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-SHEET_ID = "1RggJz98tnR86fo_AspwLWUVOIABn6vVrvojAkfQAqHc"  # Tu ID real
+
+# ID del Google Sheet (reemplaza con tu ID real)
+SHEET_ID = "1RggJz98tnR86fo_AspwLWUVOIABn6vVrvojAkfQAqHc"
 
 def obtener_credenciales():
     cred_json = os.getenv("GOOGLE_CREDENTIALS_JSON")
@@ -26,24 +29,18 @@ class SheetsManager:
         self.mensajes = conectar_hoja("Mensajes")
 
     def update_contact(self, telefono):
-        registros = self.contactos.get_all_records()
-        if not any(c["ID"] == telefono for c in registros):
-            now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            self.contactos.append_row([telefono, now])
+        contactos = self.contactos.get_all_records()
+        if not any(c["Teléfono"] == telefono for c in contactos):
+            self.contactos.append_row([telefono, datetime.now().strftime("%Y-%m-%d %H:%M:%S")])
 
     def log_message(self, telefono, mensaje, tipo, canal):
         try:
-            now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             self.mensajes.append_row([
-                telefono,       # ID_Contacto
-                now,            # Fecha
-                tipo,           # Tipo: "Recibido" o "Enviado"
-                canal,          # Canal: "WhatsApp"
-                mensaje,        # Mensaje
-                "Pendiente",    # Estado_Respuesta
-                "Sí",           # Automatizado
-                "Bot",          # Responsable
-                ""              # Observaciones
+                telefono,
+                mensaje,
+                tipo,
+                canal,
+                datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             ])
             return True
         except Exception as e:
@@ -58,4 +55,5 @@ class SheetsManager:
             "recibidos": sum(1 for m in mensajes if m["Tipo"] == "Recibido")
         }
 
+# Instancia global
 sheets_manager = SheetsManager()
