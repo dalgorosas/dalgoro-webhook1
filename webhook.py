@@ -10,6 +10,12 @@ app = Flask(__name__)
 logger = logging.getLogger(__name__)
 
 # ----------------------
+# Verificación de entorno
+# ----------------------
+if not Config.GREEN_API_INSTANCE or not Config.GREEN_API_TOKEN:
+    raise EnvironmentError("❌ GREEN_API_INSTANCE o GREEN_API_TOKEN no están definidos en variables de entorno.")
+
+# ----------------------
 # Control de límites
 # ----------------------
 class RateLimiter:
@@ -63,6 +69,8 @@ class WhatsAppBot:
         if r.status_code == 200:
             sheets_manager.log_message(telefono, mensaje, "Enviado", "WhatsApp")
             return True
+        else:
+            print(f"❌ Error al enviar mensaje: {r.status_code} - {r.text}")
         return False
 
 bot = WhatsAppBot()
@@ -77,6 +85,10 @@ def recibir():
 
     data = request.json
     print("📥 JSON recibido:\n", json.dumps(data, indent=2))
+
+    # Ignorar eventos que no son mensajes entrantes
+    if data.get("typeWebhook") != "incomingMessageReceived":
+        return jsonify({"status": "ignorado"}), 200
 
     try:
         tipo = data["messageData"].get("typeMessage", "")
