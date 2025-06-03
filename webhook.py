@@ -118,16 +118,15 @@ def recibir():
 # ----------------------
 # Local (opcional)
 # ----------------------
+
 if __name__ == "__main__":
+    def validar_token():
+        import requests
+        from config import Config
+
+        url = f"https://api.green-api.com/waInstance{Config.GREEN_API_INSTANCE}/getSettings/{Config.GREEN_API_TOKEN}"
+        r = requests.get(url)
+        print("🔍 Resultado validación:", r.status_code, r.text)
+
+    validar_token()
     app.run(debug=True, port=5000)
-
-def validar_token():
-    import requests
-    from config import Config
-
-    url = f"https://api.green-api.com/waInstance{Config.GREEN_API_INSTANCE}/getSettings/{Config.GREEN_API_TOKEN}"
-    r = requests.get(url)
-    print("🔍 Resultado validación:", r.status_code, r.text)
-
-# Llamada de prueba (solo una vez al ejecutar localmente o desde Render)
-validar_token()
