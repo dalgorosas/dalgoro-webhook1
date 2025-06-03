@@ -68,7 +68,7 @@ class WhatsAppBot:
 bot = WhatsAppBot()
 
 # ----------------------
-# Webhook
+# Webhook principal
 # ----------------------
 @app.route("/webhook", methods=["POST"])
 def recibir():
@@ -76,11 +76,11 @@ def recibir():
         return jsonify({"error": "Formato inválido"}), 400
 
     data = request.json
-    print("📥 JSON recibido:", json.dumps(data, indent=2))  # Para depuración
+    print("📥 JSON recibido:\n", json.dumps(data, indent=2))  # Para depuración
 
     try:
         mensaje = data["messageData"]["extendedTextMessageData"]["text"]
-        telefono = data["instanceData"]["senderData"]["chatId"].replace("@c.us", "")
+        telefono = data["senderData"]["chatId"].replace("@c.us", "")
     except KeyError as e:
         print("❌ Clave faltante en JSON:", e)
         return jsonify({"error": "Estructura de mensaje no esperada"}), 400
@@ -89,7 +89,7 @@ def recibir():
         print("❌ Datos incompletos:", telefono, mensaje)
         return jsonify({"error": "Datos incompletos"}), 400
 
-    # Guardar en Google Sheets
+    # Guardar en Sheets
     sheets_manager.update_contact(telefono)
     sheets_manager.log_message(telefono, mensaje, "Recibido", "WhatsApp")
 
@@ -100,7 +100,7 @@ def recibir():
     return jsonify({"status": "ok"}), 200
 
 # ----------------------
-# Inicio local
+# Ejecución local (opcional)
 # ----------------------
 if __name__ == "__main__":
     app.run(debug=True, port=5000)
