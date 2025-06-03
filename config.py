@@ -7,8 +7,16 @@ class Config:
 
     DEFAULT_RESPONSES = {
         "hola": "¡Hola! ¿En qué podemos ayudarte?",
-        "licencia": "Ofrecemos consultoría para licenciamiento ambiental. ¿Quieres más información?",
-        "default": "Gracias por contactarnos. Pronto responderemos."
+        "servicio": "Ofrecemos consultoría ambiental: licenciamiento, cumplimiento normativo, gestión de residuos y más. ¿Qué tipo de servicio buscas?",
+        "servicios": "Ofrecemos consultoría ambiental: licenciamiento, cumplimiento normativo, gestión de residuos y más. ¿Qué tipo de servicio buscas?",
+        "licencia": "Te ayudamos a obtener tu licencia ambiental sin complicaciones. ¿Tu finca, negocio o proyecto ya cuenta con estudios previos?",
+        "consultoría": "Brindamos acompañamiento técnico, cumplimiento legal y soluciones ambientales. ¿Deseas asesoría mensual o por proyecto?",
+        "precio": "Nuestros precios dependen del alcance del proyecto. ¿Podrías indicarnos brevemente qué necesitas para poder cotizarte?",
+        "cotización": "Con gusto preparamos una cotización. ¿Qué tipo de actividad realizas y dónde estás ubicado?",
+        "inicio": "Para comenzar solo necesitamos una breve descripción de tu actividad y tu ubicación. ¿Quieres que te orientemos paso a paso?",
+        "comenzar": "Perfecto. ¿Puedes contarnos en qué consiste tu proyecto para indicarte cómo empezar?",
+        "industria": "Trabajamos con bananeras, camaroneras, agroindustria, minería y más. ¿A qué sector perteneces?",
+        "default": "Gracias por escribirnos. Por favor, indícanos el motivo de tu consulta y te ayudaremos lo antes posible."
     }
 
     MAX_MESSAGES_PER_MINUTE = 5
