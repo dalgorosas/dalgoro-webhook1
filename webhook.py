@@ -37,7 +37,7 @@ class RateLimiter:
 rate_limiter = RateLimiter()
 
 # ----------------------
-# Lógica del bot
+# Bot WhatsApp
 # ----------------------
 class WhatsAppBot:
     def __init__(self):
@@ -76,32 +76,35 @@ def recibir():
         return jsonify({"error": "Formato inválido"}), 400
 
     data = request.json
-    print("📥 JSON recibido:\n", json.dumps(data, indent=2))  # Para depuración
+    print("📥 JSON recibido:\n", json.dumps(data, indent=2))
 
     try:
-    if data["messageData"]["typeMessage"] == "extendedTextMessage":
-        mensaje = data["messageData"]["extendedTextMessageData"]["text"]
-    elif data["messageData"]["typeMessage"] == "textMessage":
-        mensaje = data["messageData"]["textMessageData"]["textMessage"]
-    else:
-        mensaje = ""
-    telefono = data["senderData"]["chatId"].replace("@c.us", "")
-except KeyError as e:
-    print("❌ Clave faltante en JSON:", e)
-    return jsonify({"error": "Estructura de mensaje no esperada"}), 400
+        tipo = data["messageData"].get("typeMessage", "")
+        if tipo == "extendedTextMessage":
+            mensaje = data["messageData"]["extendedTextMessageData"]["text"]
+        elif tipo == "textMessage":
+            mensaje = data["messageData"]["textMessageData"]["textMessage"]
+        else:
+            mensaje = ""
+        telefono = data["senderData"]["chatId"].replace("@c.us", "")
+    except KeyError as e:
+        print("❌ Clave faltante en JSON:", e)
+        return jsonify({"error": "Estructura de mensaje no esperada"}), 400
 
-    # Guardar en Sheets
+    if not telefono or not mensaje:
+        print("❌ Datos incompletos:", telefono, mensaje)
+        return jsonify({"error": "Datos incompletos"}), 400
+
+    # Guardar y responder
     sheets_manager.update_contact(telefono)
     sheets_manager.log_message(telefono, mensaje, "Recibido", "WhatsApp")
-
-    # Responder automáticamente
     respuesta = bot.get_response(mensaje)
     bot.send_message(telefono, respuesta)
 
     return jsonify({"status": "ok"}), 200
 
 # ----------------------
-# Ejecución local (opcional)
+# Local (opcional)
 # ----------------------
 if __name__ == "__main__":
     app.run(debug=True, port=5000)
