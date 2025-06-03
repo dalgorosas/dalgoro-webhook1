@@ -4,10 +4,14 @@ from config import Config
 from datetime import datetime
 import requests
 import logging
+import json
 
 app = Flask(__name__)
 logger = logging.getLogger(__name__)
 
+# ----------------------
+# Control de límites
+# ----------------------
 class RateLimiter:
     def __init__(self):
         self.message_counts = {}
@@ -32,6 +36,9 @@ class RateLimiter:
 
 rate_limiter = RateLimiter()
 
+# ----------------------
+# Lógica del bot
+# ----------------------
 class WhatsAppBot:
     def __init__(self):
         self.responses = Config.DEFAULT_RESPONSES
@@ -60,28 +67,40 @@ class WhatsAppBot:
 
 bot = WhatsAppBot()
 
+# ----------------------
+# Webhook
+# ----------------------
 @app.route("/webhook", methods=["POST"])
 def recibir():
     if not request.is_json:
         return jsonify({"error": "Formato inválido"}), 400
 
     data = request.json
-    print("📥 JSON recibido:", data)  # Línea temporal de depuración
+    print("📥 JSON recibido:", json.dumps(data, indent=2))  # Para depuración
 
-    mensaje = data.get("messageData", {}).get("textMessageData", {}).get("textMessage", "")
-    telefono = data.get("senderData", {}).get("chatId", "").replace("@c.us", "")
+    try:
+        mensaje = data["messageData"]["extendedTextMessageData"]["text"]
+        telefono = data["instanceData"]["senderData"]["chatId"].replace("@c.us", "")
+    except KeyError as e:
+        print("❌ Clave faltante en JSON:", e)
+        return jsonify({"error": "Estructura de mensaje no esperada"}), 400
 
     if not telefono or not mensaje:
         print("❌ Datos incompletos:", telefono, mensaje)
         return jsonify({"error": "Datos incompletos"}), 400
 
-    if not rate_limiter.can_process_message(telefono):
-        return jsonify({"error": "Límite alcanzado"}), 429
-
+    # Guardar en Google Sheets
     sheets_manager.update_contact(telefono)
     sheets_manager.log_message(telefono, mensaje, "Recibido", "WhatsApp")
 
+    # Responder automáticamente
     respuesta = bot.get_response(mensaje)
     bot.send_message(telefono, respuesta)
 
     return jsonify({"status": "ok"}), 200
+
+# ----------------------
+# Inicio local
+# ----------------------
+if __name__ == "__main__":
+    app.run(debug=True, port=5000)
