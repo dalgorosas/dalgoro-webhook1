@@ -79,15 +79,16 @@ def recibir():
     print("📥 JSON recibido:\n", json.dumps(data, indent=2))  # Para depuración
 
     try:
+    if data["messageData"]["typeMessage"] == "extendedTextMessage":
         mensaje = data["messageData"]["extendedTextMessageData"]["text"]
-        telefono = data["senderData"]["chatId"].replace("@c.us", "")
-    except KeyError as e:
-        print("❌ Clave faltante en JSON:", e)
-        return jsonify({"error": "Estructura de mensaje no esperada"}), 400
-
-    if not telefono or not mensaje:
-        print("❌ Datos incompletos:", telefono, mensaje)
-        return jsonify({"error": "Datos incompletos"}), 400
+    elif data["messageData"]["typeMessage"] == "textMessage":
+        mensaje = data["messageData"]["textMessageData"]["textMessage"]
+    else:
+        mensaje = ""
+    telefono = data["senderData"]["chatId"].replace("@c.us", "")
+except KeyError as e:
+    print("❌ Clave faltante en JSON:", e)
+    return jsonify({"error": "Estructura de mensaje no esperada"}), 400
 
     # Guardar en Sheets
     sheets_manager.update_contact(telefono)
