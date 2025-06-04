@@ -5,6 +5,7 @@ from datetime import datetime
 import requests
 import logging
 import json
+from respuestas_por_actividad import FLUJOS_POR_ACTIVIDAD
 
 app = Flask(__name__)
 logger = logging.getLogger(__name__)
@@ -51,10 +52,14 @@ class WhatsAppBot:
 
     def get_response(self, mensaje):
         mensaje = mensaje.lower()
-        for clave, respuesta in self.responses.items():
-            if clave != "default" and clave in mensaje:
-                return respuesta
-        return self.responses["default"]
+
+        # Intentar detectar actividad según palabras clave
+        for actividad in FLUJOS_POR_ACTIVIDAD.keys():
+            if actividad in mensaje:
+                return FLUJOS_POR_ACTIVIDAD[actividad]["introduccion"]
+
+        # Si no se reconoce la actividad, responder de forma neutra
+        return "👋 Hola, gracias por escribirnos. ¿Podría indicarnos a qué tipo de actividad se dedica? Bananera, camaronera, minería, cacaotera, ciclo corto, granja avícola, granja porcina, hotel, industria u otros."
 
     def send_message(self, telefono, mensaje):
         if not rate_limiter.can_send_response():

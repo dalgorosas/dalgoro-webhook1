@@ -10,17 +10,34 @@ SCOPE = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/au
 # ID del Google Sheet (reemplaza con tu ID real)
 SHEET_ID = "1RggJz98tnR86fo_AspwLWUVOIABn6vVrvojAkfQAqHc"
 
+import os
+import json
+from oauth2client.service_account import ServiceAccountCredentials
+
 def obtener_credenciales():
-    cred_json = os.getenv("GOOGLE_CREDENTIALS_JSON")
-    if not cred_json:
-        raise ValueError("La variable de entorno GOOGLE_CREDENTIALS_JSON no está definida.")
-    cred_dict = json.loads(cred_json)
+    try:
+        # INTENTO 1: usar variable de entorno si está bien cargada
+        cred_json = os.getenv("GOOGLE_CREDENTIALS_JSON")
+        if cred_json and cred_json.strip():
+            cred_dict = json.loads(cred_json)
+            return ServiceAccountCredentials.from_json_keyfile_dict(cred_dict, SCOPE)
+    except Exception as e:
+        print(f"⚠️ Variable de entorno no válida. Motivo: {e}")
+
+    # INTENTO 2: modo local con archivo JSON
+    print("🗂️ Usando archivo local de credenciales.")
+    with open("dalgoro-api-ea1fa305d0ca.json", "r", encoding="utf-8") as f:
+        cred_dict = json.load(f)
     return ServiceAccountCredentials.from_json_keyfile_dict(cred_dict, SCOPE)
 
 def conectar_hoja(nombre_hoja):
     creds = obtener_credenciales()
     cliente = gspread.authorize(creds)
-    hoja = cliente.open_by_key(SHEET_ID).worksheet(nombre_hoja)
+
+    # Reemplaza esta URL con la URL real de tu Google Sheet
+    url_hoja = "https://docs.google.com/spreadsheets/d/1RggJz98tnR86fo_AspwLWUVOIABn6vVrvojAkfQAqHc/edit#gid=0"
+
+    hoja = cliente.open_by_url(url_hoja).worksheet(nombre_hoja)
     return hoja
 
 class SheetsManager:
@@ -35,17 +52,31 @@ class SheetsManager:
 
     def log_message(self, telefono, mensaje, tipo, canal):
         try:
-            self.mensajes.append_row([
-                telefono,
-                mensaje,
-                tipo,
-                canal,
-                datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            hoja = conectar_hoja("Mensajes")
+            ahora = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            hoja.append_row([
+                telefono,      # A - Teléfono
+                ahora,         # B - Fecha
+                tipo,          # C - Tipo
+                canal,         # D - Canal
+                mensaje,       # E - Mensaje
             ])
             return True
         except Exception as e:
             print("Error al registrar mensaje:", e)
             return False
+
+def registrar_mensaje(chat_id, mensaje, tipo, canal):
+    from datetime import datetime
+    hoja = conectar_hoja("Mensajes")
+    ahora = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    hoja.append_row([
+        chat_id,    # A - Teléfono
+        ahora,      # B - Fecha
+        tipo,       # C - Tipo
+        canal,      # D - Canal
+        mensaje,    # E - Mensaje
+    ])
 
     def get_analytics_data(self):
         mensajes = self.mensajes.get_all_records()
@@ -57,3 +88,110 @@ class SheetsManager:
 
 # Instancia global
 sheets_manager = SheetsManager()
+
+# ----------------------------
+# FUNCIONES PARA FOLLOW-UP AUTOMÁTICO
+# ----------------------------
+
+from datetime import datetime, timedelta
+import pytz
+
+ZONA_EC = pytz.timezone("America/Guayaquil")
+
+def obtener_contactos_activos():
+    hoja = conectar_hoja("Mensajes")
+    registros = hoja.get_all_records()
+
+    activos = []
+    for fila in registros:
+        estado = fila.get("Estado", "").strip().lower()
+        if estado in ["activo", "seguimiento_1", "seguimiento_2", "recordatorio"]:
+            activos.append({
+                "chat_id": fila.get("Teléfono", "").strip(),
+                "estado": estado,
+                "ultimo_mensaje": fila.get("Fecha", "")
+            })
+    return activos
+
+def actualizar_estado_chat(chat_id, nuevo_estado):
+    hoja = conectar_hoja("Mensajes")
+    datos = hoja.get_all_values()
+
+    for i, fila in enumerate(datos):
+        if i == 0:
+            continue  # Encabezados
+        if fila[0].strip() == chat_id.strip():
+            hoja.update_cell(i + 1, 3, nuevo_estado)  # Columna C = Estado
+            break
+
+def actualizar_ultima_interaccion(chat_id):
+    hoja = conectar_hoja("Mensajes")
+    datos = hoja.get_all_values()
+    ahora = datetime.now(ZONA_EC).strftime("%Y-%m-%d %H:%M:%S")
+
+    for i, fila in enumerate(datos):
+        if i == 0:
+            continue
+        if fila[0].strip() == chat_id.strip():
+            hoja.update_cell(i + 1, 4, ahora)  # Columna D = Fecha
+            break
+
+def registrar_mensaje(chat_id, mensaje, tipo, canal):
+    hoja = conectar_hoja("Mensajes")
+    ahora = datetime.now(ZONA_EC).strftime("%Y-%m-%d %H:%M:%S")
+    hoja.append_row([
+        chat_id,    # Número
+        ahora,      # Fecha
+        tipo,       # Tipo
+        canal,      # Canal
+        mensaje     # Mensaje
+    ])
+
+def registrar_cita_en_hoja(
+    contacto: str,
+    fecha_cita: str,
+    hora: str,
+    modalidad: str,
+    lugar: str,
+    observaciones: str = ""
+):
+    """
+    Registra una nueva cita en la hoja 'Citas' del Google Sheets.
+    contacto: número del cliente (593...)
+    fecha_cita: fecha en formato texto (ej. '2025-06-10')
+    hora: hora en formato texto (ej. '10:00')
+    modalidad: 'Finca' o 'Oficina'
+    lugar: ubicación del encuentro
+    observaciones: cualquier nota adicional
+    """
+    hoja = conectar_hoja("Citas")
+    fila = [
+        contacto,
+        fecha_cita,
+        hora,
+        modalidad,
+        lugar,
+        "Pendiente",       # Confirmada por defecto
+        observaciones
+    ]
+    hoja.append_row(fila)
+
+def actualizar_estado_cita(contacto, nuevo_estado, observaciones_adicionales=""):
+    """
+    Actualiza el estado de una cita existente en la hoja 'Citas' para un contacto específico.
+    Se basa en el número de contacto (ID_Contacto) y modifica la columna 'Confirmada' y 'Observaciones'.
+    """
+    hoja = conectar_hoja("Citas")
+    filas = hoja.get_all_values()
+
+    for idx, fila in enumerate(filas):
+        if idx == 0:
+            continue  # Saltar cabecera
+
+        if fila[0] == contacto:
+            hoja.update_cell(idx + 1, 6, nuevo_estado)  # Columna F = Confirmada
+            hoja.update_cell(idx + 1, 7, observaciones_adicionales)  # Columna G = Observaciones
+            print(f"✅ Estado de la cita para {contacto} actualizado a '{nuevo_estado}'")
+            return
+
+    print(f"⚠️ No se encontró cita activa para {contacto}.")
