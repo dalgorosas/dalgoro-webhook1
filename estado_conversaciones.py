@@ -51,7 +51,6 @@ def manejar_conversacion(chat_id, mensaje, actividad_detectada, ultima_interacci
     ahora = datetime.now()
 
     estado = obtener_estado(chat_id)
-    estado["ultima_interaccion"] = ahora.isoformat()
 
     if debe_reiniciar_flujo(ultima_interaccion, ahora):
         estado.update({
@@ -64,16 +63,21 @@ def manejar_conversacion(chat_id, mensaje, actividad_detectada, ultima_interacci
         return RESPUESTA_INICIAL
 
     # Verificar si corresponde enviar mensaje de seguimiento
-    if ultima_interaccion:
+    if not ultima_interaccion or (ahora - ultima_interaccion).total_seconds() < 15:
+        print("⏳ Ignorando seguimiento porque es una nueva conversación reciente.")
+    else:
         minutos_pasados = (ahora - ultima_interaccion).total_seconds() / 60
         seguimiento = obtener_mensaje_seguimiento(minutos_pasados)
         if seguimiento:
             return seguimiento
 
+    estado["ultima_interaccion"] = ahora.isoformat()
+
     cita = extraer_fecha_y_hora(mensaje)
     if cita:
         registrar_cita(chat_id, cita)
-        return f"🗕 Hemos registrado su solicitud de cita para el {cita['fecha']} a las {cita['hora']} 🕓\nNos comunicaremos para confirmar los detalles. Muchas gracias por confiar en nosotros."
+        return f"🗕 Hemos registrado su solicitud de cita para el {cita['fecha']} a las {cita['hora']} 🕓
+Nos comunicaremos para confirmar los detalles. Muchas gracias por confiar en nosotros."
 
     if not estado["actividad"]:
         if actividad_detectada and actividad_detectada in FLUJOS_POR_ACTIVIDAD:
