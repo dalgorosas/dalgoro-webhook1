@@ -1,11 +1,12 @@
+from gestor_conversacion import manejar_conversacion
 from flask import Flask, request, jsonify
 from google_sheets_utils import sheets_manager
 from config import Config
 from datetime import datetime
+from bot import enviar_mensaje
 import requests
 import logging
 import json
-from respuestas_por_actividad import FLUJOS_POR_ACTIVIDAD, RESPUESTA_INICIAL
 
 app = Flask(__name__)
 logger = logging.getLogger(__name__)
@@ -43,42 +44,6 @@ class RateLimiter:
 
 rate_limiter = RateLimiter()
 
-# ----------------------
-# Bot WhatsApp
-# ----------------------
-class WhatsAppBot:
-    def __init__(self):
-        self.responses = Config.DEFAULT_RESPONSES
-
-    def get_response(self, mensaje):
-        mensaje = mensaje.lower()
-
-        # Intentar detectar actividad según palabras clave
-        for actividad in FLUJOS_POR_ACTIVIDAD.keys():
-            if actividad in mensaje:
-                return FLUJOS_POR_ACTIVIDAD[actividad]["introduccion"]
-
-        # Si no se reconoce la actividad, responder de forma neutra
-        return RESPUESTA_INICIAL
-
-    def send_message(self, telefono, mensaje):
-        if not rate_limiter.can_send_response():
-            return False
-        url = f"{Config.GREEN_API_BASE_URL}/waInstance{Config.GREEN_API_INSTANCE}/sendMessage/{Config.GREEN_API_TOKEN}"
-        data = {
-            "chatId": f"{telefono}@c.us",
-            "message": mensaje
-        }
-        headers = {"Content-Type": "application/json"}
-        r = requests.post(url, json=data, headers=headers)
-        if r.status_code == 200:
-            sheets_manager.log_message(telefono, mensaje, "Enviado", "WhatsApp")
-            return True
-        else:
-            print(f"❌ Error al enviar mensaje: {r.status_code} - {r.text}")
-        return False
-
-bot = WhatsAppBot()
 
 # ----------------------
 # Webhook principal
@@ -112,11 +77,17 @@ def recibir():
         print("❌ Datos incompletos:", telefono, mensaje)
         return jsonify({"error": "Datos incompletos"}), 400
 
-    # Guardar y responder
+    # Guardar contacto y registrar mensaje recibido
     sheets_manager.update_contact(telefono)
     sheets_manager.log_message(telefono, mensaje, "Recibido", "WhatsApp")
-    respuesta = bot.get_response(mensaje)
-    bot.send_message(telefono, respuesta)
+
+    # Obtener respuesta desde lógica personalizada
+    respuesta = manejar_conversacion(mensaje, f"{telefono}@c.us")
+
+    # Registrar y enviar la respuesta
+    sheets_manager.log_message(telefono, respuesta, "Enviado", "Bot")
+    enviar_mensaje(telefono, respuesta)
+
 
     return jsonify({"status": "ok"}), 200
 

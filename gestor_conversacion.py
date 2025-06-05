@@ -5,6 +5,7 @@ from respuestas_por_actividad import obtener_respuesta_por_actividad
 from respuestas_finales import obtener_mensaje_agradecimiento
 from seguimiento_silencio import manejar_seguimiento
 from respuestas_por_actividad import obtener_respuesta_por_actividad, RESPUESTA_INICIAL
+from respuestas_por_actividad import FLUJOS_POR_ACTIVIDAD
 
 # Simulación de base de datos en memoria
 estado_conversaciones = {}
