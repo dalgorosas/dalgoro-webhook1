@@ -137,3 +137,7 @@ for actividad in [
         FLUJOS_POR_ACTIVIDAD[actividad] = {}
     if "agradecimiento" not in FLUJOS_POR_ACTIVIDAD[actividad]:
         FLUJOS_POR_ACTIVIDAD[actividad]["agradecimiento"] = "✅ Su cita ha sido registrada correctamente. El Ing. Darwin González Romero se comunicará con usted mediante el número 0984770663 para confirmar los detalles. ¡Gracias por confiar en nosotros! 🌿"
+
+def obtener_respuesta_por_actividad(actividad, mensaje_usuario):
+    flujo = FLUJOS_POR_ACTIVIDAD.get(actividad, {})
+    return flujo.get("agradecimiento", "✅ Gracias por su mensaje.")

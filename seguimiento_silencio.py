@@ -43,3 +43,11 @@ def debe_reiniciar_conversacion(minutos_desde_ultimo_mensaje):
     """
     max_tiempo = sum((paso["espera"] for paso in SEGUIMIENTOS), datetime.timedelta())
     return datetime.timedelta(minutes=minutos_desde_ultimo_mensaje) > max_tiempo
+
+# 🚧 Esta función es solo una estructura vacía para evitar errores de importación durante pruebas
+def manejar_seguimiento(chat_id, estado):
+    """
+    Función placeholder para evitar errores si se importa.
+    En producción real, aquí podría evaluarse si enviar seguimiento, según estado.
+    """
+    return None

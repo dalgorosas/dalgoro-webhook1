@@ -58,3 +58,17 @@ def manejar_conversacion(chat_id, mensaje, actividad_detectada, ultima_interacci
 
     # Si cae en un caso no contemplado
     return "Gracias por escribirnos. En breve uno de nuestros asesores se pondrá en contacto con usted."
+
+def reiniciar_conversacion(chat_id):
+    """
+    Reinicia manualmente la conversación de un número específico de WhatsApp.
+    """
+    if chat_id in estado_conversaciones:
+        del estado_conversaciones[chat_id]
+        return f"🔄 Conversación con {chat_id} reiniciada exitosamente."
+    else:
+        return f"⚠️ No hay conversación activa con {chat_id}."
+
+def manejar_seguimiento(chat_id, estado):
+    # Simulación para pruebas, no hace nada real
+    return None
