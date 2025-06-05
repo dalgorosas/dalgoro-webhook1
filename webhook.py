@@ -82,7 +82,7 @@ def recibir():
     sheets_manager.log_message(telefono, mensaje, "Recibido", "WhatsApp")
 
     # Obtener respuesta desde lógica personalizada
-    respuesta = manejar_conversacion(mensaje, f"{telefono}@c.us")
+    respuesta = manejar_conversacion(f"{telefono}@c.us", mensaje, None, datetime.now())
 
     # Registrar y enviar la respuesta
     sheets_manager.log_message(telefono, respuesta, "Enviado", "Bot")
