@@ -53,7 +53,7 @@ def manejar_conversacion(chat_id, mensaje, actividad_detectada, ultima_interacci
     estado = obtener_estado(chat_id)
     estado["ultima_interaccion"] = ahora.isoformat()
 
-    if estado.get("fase") == "inicio" or debe_reiniciar_flujo(ultima_interaccion, ahora):
+    if debe_reiniciar_flujo(ultima_interaccion, ahora):
         estado.update({
             "actividad": None,
             "etapa": None,
