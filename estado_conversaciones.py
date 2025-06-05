@@ -76,9 +76,11 @@ def manejar_conversacion(chat_id, mensaje, actividad_detectada, ultima_interacci
     cita = extraer_fecha_y_hora(mensaje)
     if cita:
         registrar_cita(chat_id, cita)
-        return f"🗕 Hemos registrado su solicitud de cita para el {cita['fecha']} a las {cita['hora']} 🕓
-Nos comunicaremos para confirmar los detalles. Muchas gracias por confiar en nosotros."
-
+        return (
+            f"🗓 Hemos registrado su solicitud de cita para el {cita['fecha']} a las {cita['hora']} ⏰.\n"
+            "Nos comunicaremos para confirmar los detalles. Muchas gracias por confiar en nosotros."
+        )
+        
     if not estado["actividad"]:
         if actividad_detectada and actividad_detectada in FLUJOS_POR_ACTIVIDAD:
             estado["actividad"] = actividad_detectada
