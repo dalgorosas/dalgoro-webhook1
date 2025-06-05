@@ -59,7 +59,7 @@ class WhatsAppBot:
                 return FLUJOS_POR_ACTIVIDAD[actividad]["introduccion"]
 
         # Si no se reconoce la actividad, responder de forma neutra
-        return "Disculpa, no estoy seguro de haber entendido bien. ¿Podrías contarme un poco más sobre a qué se dedica tu actividad o negocio? Puede ser algo como bananera, camaronera, minería, cacaotera, ciclo corto, granja avícola, porcina, hotel, industria… o cualquier otro. Estoy aquí para ayudarte, así que dime con tus palabras 😊"
+        return RESPUESTA_INICIAL
 
     def send_message(self, telefono, mensaje):
         if not rate_limiter.can_send_response():
