@@ -3,7 +3,7 @@ import os
 
 # Usa variables de entorno si es posible
 INSTANCE_ID = os.getenv("GREENAPI_INSTANCE_ID", "7105252633")
-API_TOKEN = os.getenv("GREENAPI_API_TOKEN", "reemplaza_con_tu_token")
+API_TOKEN = os.getenv("GREENAPI_API_TOKEN", "d2bde5d93868489e97bda6a22e40ddd9659b990c25c8422bb2")
 
 def enviar_mensaje(numero, mensaje):
     url = f"https://api.green-api.com/waInstance{INSTANCE_ID}/sendMessage/{API_TOKEN}"
