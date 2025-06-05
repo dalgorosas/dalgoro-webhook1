@@ -2,6 +2,7 @@ from datetime import datetime
 import os
 from tinydb import TinyDB, Query
 from pytz import timezone
+from dateutil.parser import isoparse
 
 # Verifica y crea el archivo si no existe
 db_path = 'estado_conversaciones.json'
@@ -14,9 +15,13 @@ Conversacion = Query()
 def obtener_estado(chat_id):
     print(f"🔎 Buscando estado para: {chat_id}")
     resultado = db.get(Conversacion.chat_id == chat_id)
+
     if resultado:
+        if "ultima_interaccion" in resultado:
+            resultado["ultima_interaccion"] = isoparse(resultado["ultima_interaccion"])
         print(f"✅ Estado encontrado: {resultado}")
         return resultado
+    
     else:
         nuevo = {
             "actividad": None,
@@ -33,7 +38,7 @@ def guardar_estado(chat_id, nuevo_estado):
     zona_ecuador = timezone('America/Guayaquil')
     nuevo_estado["ultima_interaccion"] = datetime.now(zona_ecuador).isoformat()
     
-    print(f"💾 Guardando estado para {chat_id}: {nuevo_estado}")
+    print(f"📦 Estado a guardar en DB para {chat_id}: {nuevo_estado}")  # 👈 LÍNEA NUEVA
     db.upsert(nuevo_estado, Conversacion.chat_id == chat_id)
 
 def reiniciar_estado(chat_id):

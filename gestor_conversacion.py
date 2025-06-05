@@ -50,6 +50,8 @@ def determinar_siguiente_etapa(actividad, etapa_actual, mensaje_usuario):
 
 def manejar_conversacion(chat_id, mensaje, actividad_detectada, ultima_interaccion):
     ahora = datetime.now()
+    print(f"📌 Mensaje recibido: {mensaje}")
+    print(f"📌 Actividad detectada: {actividad_detectada}")
 
     # Inicialización de conversación
     if chat_id not in estado_conversaciones or debe_reiniciar_flujo(ultima_interaccion, ahora):
