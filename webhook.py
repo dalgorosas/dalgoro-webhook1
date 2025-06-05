@@ -83,6 +83,9 @@ def recibir():
 
     # Obtener respuesta desde lógica personalizada
     respuesta = manejar_conversacion(f"{telefono}@c.us", mensaje, None, datetime.now())
+    
+    if len(respuesta) > 1000:
+        respuesta = respuesta[:997] + "..."
 
     # Registrar y enviar la respuesta
     sheets_manager.log_message(telefono, respuesta, "Enviado", "Bot")
@@ -111,3 +114,15 @@ if __name__ == "__main__":
 
     validar_token()
     app.run(debug=True, port=5000)
+
+@app.route("/reiniciar", methods=["POST"])
+def reiniciar_remoto():
+    data = request.json
+    chat_id = data.get("chat_id")
+
+    if not chat_id:
+        return jsonify({"error": "Falta el chat_id"}), 400
+
+    from gestor_conversacion import reiniciar_conversacion
+    resultado = reiniciar_conversacion(chat_id)
+    return jsonify({"resultado": resultado})

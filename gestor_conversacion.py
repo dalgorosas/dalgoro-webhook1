@@ -102,3 +102,13 @@ def reiniciar_conversacion(chat_id):
 def manejar_seguimiento(chat_id, estado):
     # Simulación para pruebas, no hace nada real
     return None
+
+def reiniciar_conversacion(chat_id):
+    """
+    Elimina todo rastro del contacto en el estado de conversación.
+    """
+    if chat_id in estado_conversaciones:
+        del estado_conversaciones[chat_id]
+        return f"✅ Conversación con {chat_id} reiniciada correctamente."
+    else:
+        return f"ℹ️ No se encontró estado previo para {chat_id}. No había nada que reiniciar."
