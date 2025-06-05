@@ -34,3 +34,9 @@ def guardar_estado(chat_id, nuevo_estado):
 def reiniciar_estado(chat_id):
     print(f"🗑 Reiniciando estado para {chat_id}")
     db.remove(Conversacion.chat_id == chat_id)
+    guardar_estado(chat_id, {
+        "actividad": None,
+        "etapa": None,
+        "fase": "inicio",
+        "ultima_interaccion": datetime.now().isoformat()
+    })
