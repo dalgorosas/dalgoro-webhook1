@@ -1,9 +1,10 @@
 from datetime import datetime
 from interpretador_citas import extraer_fecha_y_hora
 from reinicio_flujo import debe_reiniciar_flujo
-from respuestas_por_actividad import FLUJOS_POR_ACTIVIDAD, RESPUESTA_INICIAL
+from respuestas_por_actividad import obtener_respuesta_por_actividad
 from respuestas_finales import obtener_mensaje_agradecimiento
-from seguimiento_silencio import obtener_mensaje_seguimiento, debe_reiniciar_conversacion
+from seguimiento_silencio import manejar_seguimiento
+from respuestas_por_actividad import obtener_respuesta_por_actividad, RESPUESTA_INICIAL
 
 # Simulación de base de datos en memoria
 estado_conversaciones = {}
@@ -35,12 +36,6 @@ def manejar_conversacion(chat_id, mensaje, actividad_detectada, ultima_interacci
     estado = estado_conversaciones[chat_id]
     estado["ultima_interaccion"] = ahora
 
-    # 🔁 Seguimiento por silencio
-    minutos_silencio = (ahora - ultima_interaccion).total_seconds() // 60
-    mensaje_seguimiento = obtener_mensaje_seguimiento(minutos_silencio)
-    if mensaje_seguimiento:
-        return mensaje_seguimiento
-
     # Si hay cita en el mensaje
     cita = extraer_fecha_y_hora(mensaje)
     if cita:
@@ -57,7 +52,9 @@ def manejar_conversacion(chat_id, mensaje, actividad_detectada, ultima_interacci
 
     # Si ya se dio el flujo de preguntas frecuentes y vuelve a responder
     if estado["actividad"]:
-        return obtener_mensaje_agradecimiento(estado["actividad"])
+        return formatear_respuesta(
+        obtener_respuesta_por_actividad(estado["actividad"], mensaje)
+        )
 
     # Si cae en un caso no contemplado
     return "Gracias por escribirnos. En breve uno de nuestros asesores se pondrá en contacto con usted."
