@@ -1,6 +1,7 @@
 from datetime import datetime
 import os
 from tinydb import TinyDB, Query
+from pytz import timezone
 
 # Verifica y crea el archivo si no existe
 db_path = 'estado_conversaciones.json'
@@ -28,6 +29,10 @@ def obtener_estado(chat_id):
 
 def guardar_estado(chat_id, nuevo_estado):
     nuevo_estado["chat_id"] = chat_id
+    # Actualiza siempre la hora local de interacción
+    zona_ecuador = timezone('America/Guayaquil')
+    nuevo_estado["ultima_interaccion"] = datetime.now(zona_ecuador).isoformat()
+    
     print(f"💾 Guardando estado para {chat_id}: {nuevo_estado}")
     db.upsert(nuevo_estado, Conversacion.chat_id == chat_id)
 

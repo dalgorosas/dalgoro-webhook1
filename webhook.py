@@ -7,6 +7,9 @@ from bot import enviar_mensaje
 import requests
 import logging
 import json
+from mensaje_ids import cargar_ids, guardar_ids
+mensajes_recientes = cargar_ids()
+
 
 app = Flask(__name__)
 logger = logging.getLogger(__name__)
@@ -55,6 +58,13 @@ def recibir():
 
     data = request.json
     print("📥 JSON recibido:\n", json.dumps(data, indent=2))
+    
+    mensaje_id = data.get("idMessage") or data.get("messageData", {}).get("idMessage")
+    if mensaje_id in mensajes_recientes:
+        print(f"⚠️ Mensaje duplicado detectado: {mensaje_id}")
+        return jsonify({"status": "duplicado"}), 200
+    else:
+        mensajes_recientes.add(mensaje_id)
 
     # Ignorar eventos que no son mensajes entrantes
     if data.get("typeWebhook") != "incomingMessageReceived":
