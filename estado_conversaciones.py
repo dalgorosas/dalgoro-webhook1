@@ -6,7 +6,7 @@ from respuestas_finales import obtener_mensaje_agradecimiento
 from seguimiento_silencio import obtener_mensaje_seguimiento, manejar_seguimiento
 from respuestas_por_actividad import obtener_respuesta_por_actividad, RESPUESTA_INICIAL
 from respuestas_por_actividad import FLUJOS_POR_ACTIVIDAD
-from estado_conversaciones import obtener_estado, guardar_estado, reiniciar_estado
+from estado_storage import obtener_estado, guardar_estado, reiniciar_estado
 
 def registrar_cita(chat_id, cita):
     print(f"🗕️ Se registró una cita para {chat_id}: {cita}")
