@@ -81,9 +81,24 @@ def recibir():
     sheets_manager.update_contact(telefono)
     sheets_manager.log_message(telefono, mensaje, "Recibido", "WhatsApp")
 
-    # Obtener respuesta desde lógica personalizada
-    respuesta = manejar_conversacion(f"{telefono}@c.us", mensaje, None, datetime.now())
-    
+    from estado_storage import obtener_estado
+    from dateutil.parser import isoparse
+    from datetime import datetime
+
+    chat_id = f"{telefono}@c.us"
+    estado = obtener_estado(chat_id)
+    ultima_interaccion = estado.get("ultima_interaccion")
+
+    if ultima_interaccion:
+        try:
+            ultima_interaccion = isoparse(ultima_interaccion)
+        except Exception:
+            ultima_interaccion = datetime.now()
+    else:
+        ultima_interaccion = datetime.now()
+
+    respuesta = manejar_conversacion(chat_id, mensaje, None, ultima_interaccion)
+
     if len(respuesta) > 1000:
         respuesta = respuesta[:997] + "..."
 

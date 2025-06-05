@@ -5,6 +5,7 @@ import re
 from datetime import datetime
 import dateparser
 from google_sheets_utils import registrar_cita_en_hoja
+from pytz import timezone
 
 # Mapa de términos aproximados a horas estimadas
 HORAS_ESTIMADAS = {
@@ -35,7 +36,7 @@ def extraer_fecha_y_hora(texto):
     # Configuración de contexto
     settings = {
         'PREFER_DATES_FROM': 'future',
-        'RELATIVE_BASE': datetime.now()
+        'RELATIVE_BASE': datetime.now(timezone('America/Guayaquil'))
     }
 
     # Intento 1: parsear todo el texto
@@ -59,20 +60,19 @@ def extraer_fecha_y_hora(texto):
             if parsed_alt:
                 fecha_str = parsed_alt.strftime("%Y-%m-%d")
                 hora_str = parsed_alt.strftime("%H:%M") if not hora_aproximada else hora_aproximada
-                return fecha_str, hora_str
+                return {"fecha": fecha_str, "hora": hora_str}
 
     return None, None
 
 def procesar_y_registrar_cita(chat_id, mensaje):
-    fecha, hora = extraer_fecha_hora(mensaje)
-    if fecha and hora:
+    cita = extraer_fecha_y_hora(mensaje)
+    if cita:
         registrar_cita_en_hoja(
             contacto=chat_id,
-            fecha_cita=fecha,
-            hora=hora,
+            fecha_cita=cita["fecha"],
+            hora=cita["hora"],
             modalidad="Definir en llamada",
-            lugar="Definir en llamada",
-            observaciones=mensaje
+            lugar="Definir en llamada"
         )
-        return True
+    return True
     return False
