@@ -2,9 +2,6 @@ from tinydb import TinyDB, Query
 from datetime import datetime
 import os
 
-# ✅ Crear la carpeta si no existe (evita errores en Render)
-os.makedirs("/mnt/data", exist_ok=True)
-
 # ✅ Base de datos en carpeta persistente
 db = TinyDB("/mnt/data/estado_conversaciones.json")
 Conversacion = Query()
