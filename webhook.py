@@ -5,7 +5,7 @@ from datetime import datetime
 import requests
 import logging
 import json
-from respuestas_por_actividad import FLUJOS_POR_ACTIVIDAD
+from respuestas_por_actividad import FLUJOS_POR_ACTIVIDAD, RESPUESTA_INICIAL
 
 app = Flask(__name__)
 logger = logging.getLogger(__name__)
@@ -59,7 +59,7 @@ class WhatsAppBot:
                 return FLUJOS_POR_ACTIVIDAD[actividad]["introduccion"]
 
         # Si no se reconoce la actividad, responder de forma neutra
-        return "👋 Hola, gracias por escribirnos. ¿Podría indicarnos a qué tipo de actividad se dedica? Bananera, camaronera, minería, cacaotera, ciclo corto, granja avícola, granja porcina, hotel, industria u otros."
+        return "Disculpa, no estoy seguro de haber entendido bien. ¿Podrías contarme un poco más sobre a qué se dedica tu actividad o negocio? Puede ser algo como bananera, camaronera, minería, cacaotera, ciclo corto, granja avícola, porcina, hotel, industria… o cualquier otro. Estoy aquí para ayudarte, así que dime con tus palabras 😊"
 
     def send_message(self, telefono, mensaje):
         if not rate_limiter.can_send_response():
