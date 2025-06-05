@@ -1,9 +1,13 @@
-from tinydb import TinyDB, Query
 from datetime import datetime
 import os
+from tinydb import TinyDB, Query
 
-# ✅ Base de datos en carpeta persistente
-db = TinyDB("/mnt/data/estado_conversaciones.json")
+# Verifica y crea el archivo si no existe
+db_path = 'estado_conversaciones.json'
+if not os.path.exists(db_path):
+    open(db_path, 'w').close()
+
+db = TinyDB(db_path)
 Conversacion = Query()
 
 def obtener_estado(chat_id):
