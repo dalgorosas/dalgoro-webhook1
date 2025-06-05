@@ -74,7 +74,7 @@ def recibir():
         return jsonify({"error": "Estructura de mensaje no esperada"}), 400
 
     if not telefono or not mensaje:
-        print("❌ Datos incompletos:", telefono, mensaje)
+        sheets_manager.log_message(telefono or "desconocido", "Mensaje vacío o malformado", "Error", "Bot")
         return jsonify({"error": "Datos incompletos"}), 400
 
     # Guardar contacto y registrar mensaje recibido
@@ -86,7 +86,12 @@ def recibir():
 
     # Registrar y enviar la respuesta
     sheets_manager.log_message(telefono, respuesta, "Enviado", "Bot")
-    enviar_mensaje(telefono, respuesta)
+    resultado_envio = enviar_mensaje(telefono, respuesta)
+    if resultado_envio is None:
+        logger.warning(f"❌ Falló el envío a {telefono}. Respuesta: {respuesta}")
+        # Opcional: registrar en Google Sheets el fallo
+    else:
+        sheets_manager.log_message(telefono, respuesta, "Enviado", "Bot")
 
 
     return jsonify({"status": "ok"}), 200
