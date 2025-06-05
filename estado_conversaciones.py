@@ -97,6 +97,9 @@ Nos comunicaremos para confirmar los detalles. Muchas gracias por confiar en nos
 
 def reiniciar_conversacion(chat_id):
     reiniciar_estado(chat_id)
+    estado = obtener_estado(chat_id)
+    estado["ultima_interaccion"] = datetime.now().isoformat()
+    guardar_estado(chat_id, estado)
     return f"🔄 Conversación con {chat_id} reiniciada exitosamente."
 
 def manejar_seguimiento(chat_id, estado):
