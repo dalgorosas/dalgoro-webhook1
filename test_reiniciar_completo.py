@@ -1,21 +1,25 @@
 import sys
 import os
+import json
 
-# Asegura que Python encuentre los módulos del proyecto
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from gestor_conversacion import reiniciar_conversacion
+from mensaje_ids import guardar_ids
 
-# 👉 Reemplaza con tu número de prueba en formato Green API
 chat_id = "593984770663@c.us"
 
-# Reinicia el estado de conversación
+# Reinicia conversación
 resultado = reiniciar_conversacion(chat_id)
 print(f"🧹 Estado de conversación reiniciado: {resultado}")
 
-# Elimina historial de mensajes procesados
+# Elimina archivo de historial de mensajes
 try:
     os.remove("mensajes_recientes.json")
-    print("🗑️ Historial de mensajes recientes eliminado.")
+    print("🗑️ Archivo mensajes_recientes.json eliminado.")
 except FileNotFoundError:
-    print("⚠️ No existía historial de mensajes.")
+    print("⚠️ No existía archivo mensajes_recientes.json.")
+
+# Reinicia memoria reciente
+guardar_ids(set())
+print("♻️ memoria reciente de mensajes vaciada.")

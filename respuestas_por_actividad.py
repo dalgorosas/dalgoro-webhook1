@@ -16,7 +16,7 @@ FLUJOS_POR_ACTIVIDAD = {
         "aclaracion_permiso_no": "🙏 Gracias por su mensaje. ¿Le interesaría recibir nuestra asesoría gratuita para iniciar su proceso ambiental? Solo indíquenos cómo le es más cómodo reunirse 😊",
         "cierre": "Solo necesitamos que nos indique día, hora y si desea que lo visitemos en finca o en su oficina. Esta evaluación no tiene ningún costo 🙌",
         "aclaracion_cierre": "🙏 No logre identificar su disponibilidad. ¿Podría indicarnos día, hora y lugar para su cita? Es sin compromiso y 100% gratuita 🌱",
-        "agradecimiento": "🙌 Su cita ha sido registrada. El Ing. Darwin González Romero se comunicará con usted mediante el número 0984770663 para coordinar. Gracias por confiar en nosotros 🌱"
+        "agradecimiento": "🙌 Su cita ha sido registrada. El Ing. Darwin González Romero se comunicará con usted mediante el número 0984770663 para coordinar los detalles. Gracias por confiar en nosotros 🌱"
     },
 
     "camaronera": {
@@ -28,7 +28,7 @@ FLUJOS_POR_ACTIVIDAD = {
         "aclaracion_permiso_no": "🙏 Si está comenzando desde cero, podemos guiarle paso a paso. ¿Desea una cita gratuita para iniciar su proceso ambiental?",
         "cierre": "Solo indique el día y hora en que podríamos visitarle. Puede ser en la camaronera o en su oficina. La cita es gratuita 🙌",
         "aclaracion_cierre": "🙏 Para poder agendar, necesitamos saber qué día, hora y lugar prefiere para la reunión. Es completamente gratis 😊",
-        "agradecimiento": "🙌 Su cita ha sido registrada. El Ing. Darwin González Romero se comunicará con usted mediante el número 0984770663. Gracias por confiar en DALGORO 🌊"
+        "agradecimiento": "🙌 Su cita ha sido registrada. El Ing. Darwin González Romero se comunicará con usted mediante el número 0984770663 para coordinar los detalles. Gracias por confiar en DALGORO 🌊"
     },
 
     "mineria": {
@@ -40,7 +40,7 @@ FLUJOS_POR_ACTIVIDAD = {
         "aclaracion_permiso_no": "🙏 ¿Le interesaría que le visitemos para explicarle cómo empezar el proceso de regularización ambiental? La asesoría es gratuita.",
         "cierre": "Solo indíquenos el día, hora y si prefiere que visitemos su mina o su oficina. La evaluación no tiene ningún costo ⛏️",
         "aclaracion_cierre": "🙏 No logramos identificar su disponibilidad. ¿Podría confirmarnos cuándo y dónde desea reunirse con nosotros? 😊",
-        "agradecimiento": "🙌 Su cita fue registrada con éxito. El Ing. Darwin González Romero se comunicará con usted mediante el número 0984770663 para coordinar. ¡Gracias por su confianza! ⛏️"
+        "agradecimiento": "🙌 Su cita fue registrada con éxito. El Ing. Darwin González Romero se comunicará con usted mediante el número 0984770663 para coordinar los detalles. ¡Gracias por su confianza! ⛏️"
     },
     
     "cacaotera": {
@@ -52,7 +52,7 @@ FLUJOS_POR_ACTIVIDAD = {
         "aclaracion_permiso_no": "🙏 Podemos iniciar juntos su proceso ambiental. ¿Le interesa una reunión gratuita para orientarle desde el principio?",
         "cierre": "Solo indíquenos día, hora y lugar donde podamos visitarle. Esta evaluación es completamente gratuita y sin compromiso 🙌",
         "aclaracion_cierre": "🙏 ¿Nos podría indicar cuándo y dónde prefiere que le visitemos? La cita es sin costo y 100% personalizada 🍃",
-        "agradecimiento": "🙌 Su cita ha sido registrada. El Ing. Darwin González Romero se comunicará con usted mediante el número 0984770663. ¡Gracias por su confianza en nosotros! 🍫"
+        "agradecimiento": "🙌 Su cita ha sido registrada. El Ing. Darwin González Romero se comunicará con usted mediante el número 0984770663 para coordinar los detalles. ¡Gracias por su confianza en nosotros! 🍫"
     },
 
     "ciclo_corto": {
@@ -64,7 +64,7 @@ FLUJOS_POR_ACTIVIDAD = {
         "aclaracion_permiso_no": "🙏 ¿Desea que le asesoremos para iniciar su proceso ambiental? Podemos hacerlo en una visita gratuita",
         "cierre": "Indíquenos por favor fecha, hora y lugar de la reunión. Será sin costo y le daremos una solución integral 🌱",
         "aclaracion_cierre": "🙏 Para confirmar la cita, necesitamos saber cuándo y dónde prefiere que lo visitemos. Recuerde que es una asesoría gratuita 📋",
-        "agradecimiento": "🙌 Su cita fue registrada con éxito. El Ing. Darwin González Romero se comunicará con usted mediante el número 0984770663 para coordinar. Gracias por confiar en nosotros 🌾"
+        "agradecimiento": "🙌 Su cita fue registrada con éxito. El Ing. Darwin González Romero se comunicará con usted mediante el número 0984770663 para coordinar los detalles. Gracias por confiar en nosotros 🌾"
     },
 
     "granja_avicola": {
@@ -76,7 +76,7 @@ FLUJOS_POR_ACTIVIDAD = {
         "aclaracion_permiso_no": "🙏 Si desea regularizar su actividad, podemos hacer una visita técnica gratuita. ¿Le interesa?",
         "cierre": "Solo necesitamos día, hora y el lugar que prefiera para su cita. La evaluación no tiene costo ni compromiso 🙌",
         "aclaracion_cierre": "🙏 ¿Nos puede decir cuándo y dónde desea reunirse con nosotros? Recuerde que la asesoría es gratuita 🐣",
-        "agradecimiento": "🙌 Cita registrada correctamente. El Ing. Darwin González Romero se comunicará con usted mediante el número número 0984770663 para coordinar. ¡Gracias por confiar en nosotros! 🐥"
+        "agradecimiento": "🙌 Cita registrada correctamente. El Ing. Darwin González Romero se comunicará con usted mediante el número número 0984770663 para coordinar los detalles. ¡Gracias por confiar en nosotros! 🐥"
     },
 
     "granja_porcina": {
@@ -88,7 +88,7 @@ FLUJOS_POR_ACTIVIDAD = {
         "aclaracion_permiso_no": "🙏 Podemos empezar con una visita técnica sin costo. ¿Le interesa coordinarla para su granja porcina?",
         "cierre": "Solo necesitamos día, hora y lugar donde podamos reunirnos con usted. La evaluación es gratuita 🐖",
         "aclaracion_cierre": "🙏 Para confirmar su cita, necesitamos saber cuándo y dónde desea que le visitemos. Estamos para ayudarle 😊",
-        "agradecimiento": "🙌 Su cita fue registrada con éxito. El Ing. Darwin González Romero se comunicará con usted mediante el número 0984770663. Gracias por confiar en nosotros 🐽"
+        "agradecimiento": "🙌 Su cita fue registrada con éxito. El Ing. Darwin González Romero se comunicará con usted mediante el número 0984770663 para coordinar los detalles. Gracias por confiar en nosotros 🐽"
     },
     
  "hotel": {
@@ -112,7 +112,7 @@ FLUJOS_POR_ACTIVIDAD = {
         "aclaracion_permiso_no": "🙏 Si desea comenzar su proceso ambiental, podemos guiarle paso a paso. ¿Desea una reunión sin compromiso?",
         "cierre": "Por favor indíquenos día, hora y lugar para su evaluación técnica. Podemos visitarle en planta o en oficina. La cita no tiene costo 🙌",
         "aclaracion_cierre": "🙏 ¿Cuándo y dónde le gustaría que le visitemos? La asesoría es totalmente gratuita y personalizada 🏗️",
-        "agradecimiento": "🙌 Cita registrada exitosamente. El Ing. Darwin González Romero se comunicará con usted mediante el número 0984770663. ¡Gracias por confiar en DALGORO! 🏭"
+        "agradecimiento": "🙌 Cita registrada exitosamente. El Ing. Darwin González Romero se comunicará con usted mediante el número 0984770663 para coordinar los detalles. ¡Gracias por confiar en DALGORO! 🏭"
     },
 
     "otros": {

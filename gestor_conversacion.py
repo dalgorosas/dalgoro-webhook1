@@ -1,4 +1,5 @@
 from datetime import datetime
+from zoneinfo import ZoneInfo
 from interpretador_citas import extraer_fecha_y_hora
 from reinicio_flujo import debe_reiniciar_flujo
 from respuestas_por_actividad import obtener_respuesta_por_actividad
@@ -49,12 +50,15 @@ def determinar_siguiente_etapa(actividad, etapa_actual, mensaje_usuario):
     return etapa_actual
 
 def manejar_conversacion(chat_id, mensaje, actividad_detectada, ultima_interaccion):
-    ahora = datetime.now()
+    ahora = datetime.now(ZoneInfo("America/Guayaquil"))
     print(f"📌 Mensaje recibido: {mensaje}")
     print(f"📌 Actividad detectada: {actividad_detectada}")
 
     # Inicialización de conversación
     if chat_id not in estado_conversaciones or debe_reiniciar_flujo(ultima_interaccion, ahora):
+        estado_prev = estado_conversaciones.get(chat_id)
+        if estado_prev and estado_prev.get("fase") == "inicio":
+            return "✅ Ya hemos recibido su mensaje. En breve le responderemos. 🌱"
         estado_conversaciones[chat_id] = {
             "actividad": None,
             "fase": "inicio",
@@ -65,12 +69,23 @@ def manejar_conversacion(chat_id, mensaje, actividad_detectada, ultima_interacci
 
     estado = estado_conversaciones[chat_id]
     estado["ultima_interaccion"] = ahora
+    
+    # Si ya se detectó la actividad y estamos en flujo de etapas
+    if estado["actividad"]:
+        etapa_actual = estado.get("etapa", "introduccion")
+        nueva_etapa = determinar_siguiente_etapa(estado["actividad"], etapa_actual, mensaje)
+        estado["etapa"] = nueva_etapa
 
-    # Si hay cita en el mensaje
-    cita = extraer_fecha_y_hora(mensaje)
-    if cita:
-        registrar_cita(chat_id, cita)
-        return f"🗕 Hemos registrado su solicitud de cita para el {cita['fecha']} a las {cita['hora']} 🕓\nNos comunicaremos para confirmar los detalles. Muchas gracias por confiar en nosotros."
+        if nueva_etapa == "agradecimiento":
+            cita = extraer_fecha_y_hora(mensaje)
+            if cita:
+                registrar_cita(chat_id, cita)
+                fecha = cita.get("fecha") if isinstance(cita, dict) else cita[0]
+                hora = cita.get("hora") if isinstance(cita, dict) else cita[1]
+                return f"🗕 Hemos registrado su solicitud de cita para el {fecha} a las {hora} 🕓\nEl Ing. Darwin González Romero se comunicará con usted mediante el número 0984770663 para coordinar los detalles. Gracias por confiar en nosotros 🌱"
+
+        respuesta = FLUJOS_POR_ACTIVIDAD[estado["actividad"]].get(nueva_etapa, "¿Podría explicarnos un poco más para poder ayudarle mejor? 😊")
+        return formatear_respuesta(respuesta)
 
     # Si aún no se ha detectado actividad
     if not estado["actividad"]:
@@ -80,16 +95,6 @@ def manejar_conversacion(chat_id, mensaje, actividad_detectada, ultima_interacci
             return formatear_respuesta(FLUJOS_POR_ACTIVIDAD[actividad_detectada]["introduccion"])
         else:
             return "Gracias por escribirnos. ¿Podría contarnos un poco más sobre su caso para poder entender mejor y ayudarle adecuadamente? 🌱"
-
-    # Si ya se detectó la actividad y estamos en flujo de etapas
-    if estado["actividad"]:
-        etapa_actual = estado.get("etapa", "introduccion")
-        nueva_etapa = determinar_siguiente_etapa(estado["actividad"], etapa_actual, mensaje)
-        estado["etapa"] = nueva_etapa
-        respuesta = FLUJOS_POR_ACTIVIDAD[estado["actividad"]].get(nueva_etapa, "¿Podría explicarnos un poco más para poder ayudarle mejor? 😊")
-        return formatear_respuesta(respuesta)
-
-    return "Gracias por escribirnos. En breve uno de nuestros asesores se pondrá en contacto con usted."
 
 def reiniciar_conversacion(chat_id):
     """
