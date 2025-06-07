@@ -1,4 +1,4 @@
-from estado_conversaciones import manejar_conversacion
+from gestor_conversacion import manejar_conversacion
 from flask import Flask, request, jsonify
 from google_sheets_utils import sheets_manager
 from config import Config

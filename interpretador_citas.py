@@ -44,7 +44,7 @@ def extraer_fecha_y_hora(texto):
     if parsed:
         fecha_str = parsed.strftime("%Y-%m-%d")
         hora_str = parsed.strftime("%H:%M") if not hora_aproximada else hora_aproximada
-        return fecha_str, hora_str
+        return {"fecha": fecha_str, "hora": hora_str}
 
     # Intento 2: buscar subfrases como "martes a las 10", "8 de junio a las 9"
     patrones = [
