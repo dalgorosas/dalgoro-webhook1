@@ -140,13 +140,15 @@ def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual):
         return formatear_respuesta(respuesta)
 
     # Si aún no se ha detectado actividad
+    from respuestas_por_actividad import RESPUESTA_INICIAL
+
     if not estado["actividad"]:
         if actividad_detectada and actividad_detectada in FLUJOS_POR_ACTIVIDAD:
             estado["actividad"] = actividad_detectada
             estado["etapa"] = "introduccion"
             return formatear_respuesta(FLUJOS_POR_ACTIVIDAD[actividad_detectada]["introduccion"])
         else:
-            return "Gracias por escribirnos. ¿Podría contarnos un poco más sobre su caso para poder entender mejor y ayudarle adecuadamente? 🌱"
+            return formatear_respuesta(RESPUESTA_INICIAL)
 
 def reiniciar_conversacion(chat_id):
     if chat_id in estado_conversaciones:
