@@ -1,18 +1,16 @@
-from estado_storage import guardar_estado
-from datetime import datetime
-from zoneinfo import ZoneInfo
+from datetime import datetime, timezone, timedelta
+from threading import Lock
+import time
+from dateutil.parser import isoparse
+
+from estado_storage import guardar_estado, obtener_estado_seguro
 from interpretador_citas import extraer_fecha_y_hora
 from reinicio_flujo import debe_reiniciar_flujo
-from respuestas_por_actividad import obtener_respuesta_por_actividad
+from respuestas_por_actividad import obtener_respuesta_por_actividad, RESPUESTA_INICIAL, FLUJOS_POR_ACTIVIDAD
 from respuestas_finales import obtener_mensaje_agradecimiento
 from seguimiento_silencio import manejar_seguimiento
-from respuestas_por_actividad import obtener_respuesta_por_actividad, RESPUESTA_INICIAL
-from respuestas_por_actividad import FLUJOS_POR_ACTIVIDAD
-from estado_storage import obtener_estado_seguro  # asegúrate de importar esto al inicio
-from dateutil.parser import isoparse  # asegúrate que esté importado arriba
-import time
-from threading import Lock
-from datetime import timezone, timedelta
+from google_sheets_utils import guardar_estado_en_sheets
+
 ZONA_HORARIA_EC = timezone(timedelta(hours=-5))
 
 bloqueos_chat = {}
@@ -76,7 +74,7 @@ def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual):
         return None
     bloquear_chat(chat_id)
     
-    ahora = fecha_actual or datetime.now(ZoneInfo("America/Guayaquil"))
+    ahora = fecha_actual or datetime.now(ZONA_HORARIA_EC)
     actividad_detectada = actividad  # Para mantener compatibilidad con el flujo
     try:      
         estado_prev = obtener_estado_seguro(chat_id)
@@ -87,7 +85,7 @@ def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual):
             "actividad": None,
             "etapa": None,
             "fase": "inicio",
-            "ultima_interaccion": datetime.now().isoformat()
+            "ultima_interaccion": datetime.now(ZONA_HORARIA_EC).isoformat()
         }
         guardar_estado(chat_id, estado_prev)  # ✅ Guardar si fue creado manualmente
 
@@ -96,32 +94,19 @@ def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual):
     ultima_interaccion_dt = isoparse(ultima_interaccion_str) if isinstance(ultima_interaccion_str, str) else ultima_interaccion_str
 
     if ultima_interaccion_dt.tzinfo is None:
-        ultima_interaccion_dt = ultima_interaccion_dt.replace(tzinfo=ZoneInfo("America/Guayaquil"))
+        ultima_interaccion_dt = ultima_interaccion_dt.replace(tzinfo=ZONA_HORARIA_EC)
 
     if chat_id not in estado_conversaciones or debe_reiniciar_flujo(ultima_interaccion_dt, ahora):
+        estado_conversaciones[chat_id] = estado_prev
 
-        from google_sheets_utils import cargar_estado_desde_sheets
-        from estado_storage import obtener_estado_seguro as obtener_estado, guardar_estado
-        estado_prev = obtener_estado(chat_id)  # Ahora devuelve un datetime válido
-
-        if not estado_prev:
-            estado_prev = cargar_estado_desde_sheets(chat_id)
-            if estado_prev:
-                guardar_estado(chat_id, estado_prev)
-
-        if not estado_prev:
-            estado_prev = {
-        "actividad": actividad_detectada,
-        "etapa": "introduccion",
-        "fase": "inicio",
-        "ultima_interaccion": ahora
-    }
-    guardar_estado(chat_id, estado_prev)  # ✅ Guardar si fue creado manualmente
-
-    estado_conversaciones[chat_id] = estado_prev  # ✅ Necesario para no lanzar KeyError
     estado = estado_conversaciones[chat_id]
-    estado["ultima_interaccion"] = fecha_actual or datetime.now(ZONA_HORARIA_EC)
-    
+    estado["ultima_interaccion"] = ahora
+    print(f"💬 Nuevo mensaje de {chat_id}. Etapa actual: {estado.get('etapa')}, Actividad: {estado.get('actividad')}")
+        
+    if "actividad" not in estado:
+        estado["actividad"] = None
+        estado["etapa"] = "introduccion"
+
     # Si ya se detectó la actividad y estamos en flujo de etapas
     if estado["actividad"]:
         etapa_actual = estado.get("etapa", "introduccion")
@@ -137,21 +122,25 @@ def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual):
                 return f"🗕 Hemos registrado su solicitud de cita para el {fecha} a las {hora} 🕓\nEl Ing. Darwin González Romero se comunicará con usted mediante el número 0984770663 para coordinar los detalles. Gracias por confiar en nosotros 🌱"
 
         respuesta = FLUJOS_POR_ACTIVIDAD[estado["actividad"]].get(nueva_etapa, "¿Podría explicarnos un poco más para poder ayudarle mejor? 😊")
-        from google_sheets_utils import guardar_estado_en_sheets
+        
         guardar_estado(chat_id, estado)
-        guardar_estado_en_sheets(chat_id, estado)
+        
+        try:
+            guardar_estado_en_sheets(chat_id, estado)
+        except Exception as e:
+            print(f"⚠️ No se pudo guardar en Sheets: {e}")
+
         return formatear_respuesta(respuesta)
 
     # Si aún no se ha detectado actividad
-    from respuestas_por_actividad import RESPUESTA_INICIAL
 
     if not estado["actividad"]:
+        estado["ultima_interaccion"] = ahora
         if actividad_detectada and actividad_detectada in FLUJOS_POR_ACTIVIDAD:
             estado["actividad"] = actividad_detectada
             estado["etapa"] = "introduccion"
+            guardar_estado(chat_id, estado)
             return formatear_respuesta(FLUJOS_POR_ACTIVIDAD[actividad_detectada]["introduccion"])
-        else:
-            return formatear_respuesta(RESPUESTA_INICIAL)
 
 def reiniciar_conversacion(chat_id):
     if chat_id in estado_conversaciones:
