@@ -74,14 +74,19 @@ def manejar_conversacion(chat_id, mensaje, actividad_detectada, ultima_interacci
             guardar_estado(chat_id, estado)
             return formatear_respuesta(FLUJOS_POR_ACTIVIDAD[actividad_detectada]["introduccion"])
         else:
-            estado.update({
-                "actividad": None,
-                "etapa": None,
-                "fase": "inicio",
-                "ultima_interaccion": ahora.isoformat()
-            })
-            guardar_estado(chat_id, estado)
-            return RESPUESTA_INICIAL
+            if estado.get("ultima_interaccion"):
+                # Si ya hubo interacción previa, no reiniciar flujo
+                return "🙏 ¿Podrías indicarnos si tu consulta está relacionada con una camaronera, bananera, cacaotera u otra actividad? 😊"
+            else:
+                # Es un mensaje nuevo sin contexto previo
+                estado.update({
+                    "actividad": None,
+                    "etapa": None,
+                    "fase": "inicio",
+                    "ultima_interaccion": ahora.isoformat()
+                })
+                guardar_estado(chat_id, estado)
+                return RESPUESTA_INICIAL
 
     # Verificar si corresponde enviar mensaje de seguimiento
     if not ultima_interaccion or (ahora - ultima_interaccion).total_seconds() < 15:
