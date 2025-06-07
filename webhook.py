@@ -124,7 +124,6 @@ def recibir():
         respuesta = respuesta[:997] + "..."
 
     # Registrar y enviar la respuesta
-    sheets_manager.log_message(telefono, respuesta, "Enviado", "Bot")
     resultado_envio = enviar_mensaje(telefono, respuesta)
     if resultado_envio is None:
         logger.warning(f"❌ Falló el envío a {telefono}. Respuesta: {respuesta}")
