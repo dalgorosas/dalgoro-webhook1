@@ -8,18 +8,38 @@ from dateutil.parser import isoparse
 # Ruta del archivo de estado
 db_path = 'estado_usuarios.json'
 
-# Verifica y crea el archivo si no existe, intentando respaldo desde Google Sheets
-if not os.path.exists(db_path):
-    print("⚠️ El archivo estado_usuarios.json no existe. Intentando cargar desde Google Sheets...")
-    try:
-        from google_sheets_utils import cargar_estados_desde_sheets
-        estados_remotos = cargar_estados_desde_sheets()
-        with open(db_path, 'w') as f:
-            json.dump(estados_remotos, f)
-        print("✅ Archivo creado desde backup de Sheets.")
-    except Exception as e:
-        print(f"❌ Error cargando desde Sheets: {e}")
-        open(db_path, 'w').close()
+def cargar_db():
+    if not os.path.exists(db_path):
+        print("📂 No existe estado_usuarios.json. Intentando reconstruir desde Sheets...")
+        try:
+            from google_sheets_utils import cargar_estados_desde_sheets
+            estados = cargar_estados_desde_sheets()
+            with open(db_path, "w") as f:
+                json.dump({"_default": {str(i + 1): e for i, e in enumerate(estados)}}, f)
+        except Exception as e:
+            print(f"⚠️ Error al cargar desde Sheets: {e}")
+            with open(db_path, "w") as f:
+                json.dump({}, f)
+
+    else:
+        with open(db_path, "r") as f:
+            try:
+                data = json.load(f)
+                if isinstance(data, list):
+                    print("❌ Archivo corrupto (lista). Eliminando y regenerando...")
+                    os.remove(db_path)
+                    return cargar_db()
+            except Exception as e:
+                print("❌ Archivo ilegible. Eliminando y regenerando...")
+                os.remove(db_path)
+                return cargar_db()
+
+    return TinyDB(db_path)
+
+# Inicializa la base de datos
+db = cargar_db()
+Conversacion = Query()
+
 
 # Inicializa la base de datos local
 db = TinyDB(db_path)
