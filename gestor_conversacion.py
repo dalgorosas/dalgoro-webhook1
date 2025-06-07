@@ -134,6 +134,7 @@ def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual):
 
     # Si aún no se ha detectado actividad
 
+        # Si aún no se ha detectado actividad
     if not estado["actividad"]:
         estado["ultima_interaccion"] = ahora
         if actividad_detectada and actividad_detectada in FLUJOS_POR_ACTIVIDAD:
@@ -141,6 +142,11 @@ def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual):
             estado["etapa"] = "introduccion"
             guardar_estado(chat_id, estado)
             return formatear_respuesta(FLUJOS_POR_ACTIVIDAD[actividad_detectada]["introduccion"])
+        else:
+            return formatear_respuesta(RESPUESTA_INICIAL)
+
+    # 🔒 Retorno de seguridad si nada anterior se ejecutó
+    return formatear_respuesta(RESPUESTA_INICIAL)
 
 def reiniciar_conversacion(chat_id):
     if chat_id in estado_conversaciones:

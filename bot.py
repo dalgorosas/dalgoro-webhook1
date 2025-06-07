@@ -6,11 +6,17 @@ INSTANCE_ID = os.getenv("GREENAPI_INSTANCE_ID", "7105252633")
 API_TOKEN = os.getenv("GREENAPI_API_TOKEN", "d2bde5d93868489e97bda6a22e40ddd9659b990c25c8422bb2")
 
 def enviar_mensaje(numero, mensaje):
+    if not mensaje:
+        print(f"⚠️ Intento de envío sin mensaje para {numero}")
+        return None
+
     url = f"https://api.green-api.com/waInstance{INSTANCE_ID}/sendMessage/{API_TOKEN}"
     datos = {
         "chatId": f"{numero}@c.us",
         "message": mensaje
     }
+
+    print("📦 JSON a enviar:", json.dumps(datos, indent=2))
 
     try:
         respuesta = requests.post(url, json=datos)
