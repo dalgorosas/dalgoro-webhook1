@@ -64,14 +64,24 @@ def manejar_conversacion(chat_id, mensaje, actividad_detectada, ultima_interacci
     
     # 🧠 Proteger el sistema en caso de estado incompleto
     if not estado.get("actividad") or not estado.get("etapa"):
-        estado.update({
-            "actividad": actividad_detectada if actividad_detectada in FLUJOS_POR_ACTIVIDAD else None,
-            "etapa": "introduccion",
-            "fase": "inicio",
-            "ultima_interaccion": ahora.isoformat()
-        })
-        guardar_estado(chat_id, estado)
-        return RESPUESTA_INICIAL
+        if actividad_detectada and actividad_detectada in FLUJOS_POR_ACTIVIDAD:
+            estado.update({
+                "actividad": actividad_detectada,
+                "etapa": "introduccion",
+                "fase": "inicio",
+                "ultima_interaccion": ahora.isoformat()
+            })
+            guardar_estado(chat_id, estado)
+            return formatear_respuesta(FLUJOS_POR_ACTIVIDAD[actividad_detectada]["introduccion"])
+        else:
+            estado.update({
+                "actividad": None,
+                "etapa": None,
+                "fase": "inicio",
+                "ultima_interaccion": ahora.isoformat()
+            })
+            guardar_estado(chat_id, estado)
+            return RESPUESTA_INICIAL
 
     # Verificar si corresponde enviar mensaje de seguimiento
     if not ultima_interaccion or (ahora - ultima_interaccion).total_seconds() < 15:
