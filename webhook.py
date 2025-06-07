@@ -58,6 +58,11 @@ def recibir():
         return jsonify({"error": "Formato inválido"}), 400
 
     data = request.json
+    
+    # ❗️Ignorar todo lo que no sea mensaje entrante
+    if data.get("typeWebhook") != "incomingMessageReceived":
+        return jsonify({"status": "ignorado"}), 200
+    
     print("📥 JSON recibido:\n", json.dumps(data, indent=2))
     
     mensaje_id = data.get("idMessage") or data.get("messageData", {}).get("idMessage")
