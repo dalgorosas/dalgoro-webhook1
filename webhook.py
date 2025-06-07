@@ -9,6 +9,9 @@ import requests
 import logging
 import json
 from mensaje_ids import cargar_ids, guardar_ids
+from datetime import timezone, timedelta
+ZONA_HORARIA_EC = timezone(timedelta(hours=-5))
+
 mensajes_recientes = cargar_ids()
 
 
@@ -30,7 +33,7 @@ class RateLimiter:
         self.response_counts = {}
 
     def can_process_message(self, telefono):
-        minuto = datetime.now().replace(second=0, microsecond=0)
+        minuto = datetime.now(ZONA_HORARIA_EC).replace(second=0, microsecond=0)
         clave = f"{telefono}_{minuto}"
         cuenta = self.message_counts.get(clave, 0)
         if cuenta >= Config.MAX_MESSAGES_PER_MINUTE:
@@ -39,7 +42,7 @@ class RateLimiter:
         return True
 
     def can_send_response(self):
-        hora = datetime.now().replace(minute=0, second=0, microsecond=0)
+        hora = datetime.now(ZONA_HORARIA_EC).replace(minute=0, second=0, microsecond=0)
         cuenta = self.response_counts.get(hora, 0)
         if cuenta >= Config.MAX_RESPONSES_PER_HOUR:
             return False
@@ -109,9 +112,9 @@ def recibir():
         try:
             ultima_interaccion = isoparse(ultima_interaccion)
         except Exception:
-            ultima_interaccion = datetime.now()
+            ultima_interaccion = datetime.now(ZONA_HORARIA_EC)
     else:
-        ultima_interaccion = datetime.now()
+        ultima_interaccion = datetime.now(ZONA_HORARIA_EC)
 
     # ❗ Evitar procesar dos veces el mismo mensaje
     if mensaje_ya_procesado(chat_id, mensaje_id):

@@ -11,6 +11,8 @@ from estado_storage import obtener_estado_seguro  # asegúrate de importar esto 
 from dateutil.parser import isoparse  # asegúrate que esté importado arriba
 import time
 from threading import Lock
+from datetime import timezone, timedelta
+ZONA_HORARIA_EC = timezone(timedelta(hours=-5))
 
 bloqueos_chat = {}
 locks_chat = {}
@@ -117,7 +119,7 @@ def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual):
 
     estado_conversaciones[chat_id] = estado_prev  # ✅ Necesario para no lanzar KeyError
     estado = estado_conversaciones[chat_id]
-    estado["ultima_interaccion"] = ahora
+    estado["ultima_interaccion"] = fecha_actual or datetime.now(ZONA_HORARIA_EC)
     
     # Si ya se detectó la actividad y estamos en flujo de etapas
     if estado["actividad"]:
