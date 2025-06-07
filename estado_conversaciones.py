@@ -62,6 +62,15 @@ def manejar_conversacion(chat_id, mensaje, actividad_detectada, ultima_interacci
         guardar_estado(chat_id, estado)
         return RESPUESTA_INICIAL
     
+    if not estado.get("actividad"):
+        from respuestas_por_actividad import detectar_actividad
+        actividad_detectada = detectar_actividad(mensaje)
+        if actividad_detectada and actividad_detectada in FLUJOS_POR_ACTIVIDAD:
+            estado["actividad"] = actividad_detectada
+            estado["etapa"] = "introduccion"
+            guardar_estado(chat_id, estado)
+            return formatear_respuesta(FLUJOS_POR_ACTIVIDAD[actividad_detectada]["introduccion"])
+
     # 🧠 Proteger el sistema en caso de estado incompleto
     if not estado.get("actividad") or not estado.get("etapa"):
         if actividad_detectada and actividad_detectada in FLUJOS_POR_ACTIVIDAD:
@@ -102,20 +111,13 @@ def manejar_conversacion(chat_id, mensaje, actividad_detectada, ultima_interacci
     cita = extraer_fecha_y_hora(mensaje)
     if cita:
         registrar_cita(chat_id, cita)
+        estado["etapa"] = "agradecimiento"
+        guardar_estado(chat_id, estado)
         return (
             f"🗓 Hemos registrado su solicitud de cita para el {cita['fecha']} a las {cita['hora']} ⏰.\n"
             "Nos comunicaremos para confirmar los detalles. Muchas gracias por confiar en nosotros."
         )
         
-    if not estado["actividad"]:
-        if actividad_detectada and actividad_detectada in FLUJOS_POR_ACTIVIDAD:
-            estado["actividad"] = actividad_detectada
-            estado["etapa"] = "introduccion"
-            guardar_estado(chat_id, estado)
-            return formatear_respuesta(FLUJOS_POR_ACTIVIDAD[actividad_detectada]["introduccion"])
-        else:
-            return "Gracias por escribirnos. ¿Podría contarnos un poco más sobre su caso para poder entender mejor y ayudarle adecuadamente? 🌱"
-
     etapa_actual = estado.get("etapa", "introduccion")
     nueva_etapa = determinar_siguiente_etapa(estado["actividad"], etapa_actual, mensaje)
     estado["etapa"] = nueva_etapa
