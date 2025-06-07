@@ -11,6 +11,35 @@ SCOPE = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/au
 # ID del Google Sheet (reemplaza con tu ID real)
 SHEET_ID = "1RggJz98tnR86fo_AspwLWUVOIABn6vVrvojAkfQAqHc"
 
+def guardar_estado_en_sheets(chat_id, estado):
+    hoja = conectar_hoja("Estado")
+    registros = hoja.get_all_records()
+    encontrados = [i for i, fila in enumerate(registros) if str(fila.get("chat_id", "")).strip() == chat_id.strip()]
+
+    fila_nueva = {
+        "chat_id": chat_id,
+        "actividad": estado.get("actividad", ""),
+        "etapa": estado.get("etapa", ""),
+        "fase": estado.get("fase", ""),
+        "ultima_interaccion": str(estado.get("ultima_interaccion", "")),
+        "ultimo_mensaje_id": estado.get("ultimo_mensaje_id", "")
+    }
+
+    if encontrados:
+        idx = encontrados[0] + 2
+        hoja.update(f"A{idx}:F{idx}", [[
+            fila_nueva["chat_id"],
+            fila_nueva["actividad"],
+            fila_nueva["etapa"],
+            fila_nueva["fase"],
+            fila_nueva["ultima_interaccion"],
+            fila_nueva["ultimo_mensaje_id"]
+        ]])
+        print(f"🔁 Estado actualizado en fila {idx} de Sheets.")
+    else:
+        hoja.append_row(list(fila_nueva.values()))
+        print(f"➕ Estado nuevo registrado en Sheets para {chat_id}.")
+
 def obtener_credenciales():
     try:
         # INTENTO 1: usar variable de entorno si está bien cargada
@@ -38,33 +67,23 @@ def conectar_hoja(nombre_hoja):
     return hoja
 
 def cargar_estados_desde_sheets():
-    from google_sheets_utils import obtener_credenciales
-    import gspread
+    hoja = conectar_hoja("Estado")
+    registros = hoja.get_all_records()
 
-    try:
-        creds = obtener_credenciales()
-        client = gspread.authorize(creds)
-        sheet = client.open_by_key(SHEET_ID).worksheet("Estado")
-        registros = sheet.get_all_records()
+    estados = []
+    for fila in registros:
+        estados.append({
+            "chat_id": str(fila.get("chat_id", "")).strip(),
+            "actividad": fila.get("actividad", ""),
+            "etapa": fila.get("etapa", ""),
+            "fase": fila.get("fase", ""),
+            "ultima_interaccion": fila.get("ultima_interaccion", ""),
+            "ultimo_mensaje_id": fila.get("ultimo_mensaje_id", "")
+        })
+    print(f"✅ Se cargaron {len(estados)} estados desde Sheets.")
+    return estados
 
-        estado_dict = {}
-        for fila in registros:
-            chat_id = str(fila.get("chat_id", "")).strip()
-            if chat_id:
-                estado_dict[chat_id] = {
-                    "actividad": fila.get("actividad", "").strip(),
-                    "etapa": fila.get("etapa", "").strip(),
-                    "fase": fila.get("fase", "").strip(),
-                    "ultima_interaccion": fila.get("ultima_interaccion", "").strip()
-                }
-        print(f"✅ Estado cargado desde Google Sheets: {len(estado_dict)} registros")
-        return estado_dict
-
-    except Exception as e:
-        print(f"❌ Error accediendo a hoja 'Estado': {e}")
-        return {}
-
-def guardar_estado_en_sheets(contacto_id, estado):
+def guardar_estado_contacto_en_sheets(contacto_id, estado):
     hoja = conectar_hoja("Contactos")
     registros = hoja.get_all_records()
     for idx, fila in enumerate(registros, start=2):
@@ -245,7 +264,7 @@ def cargar_estado_desde_sheets(contacto_id):
             }
     return None
 
-def guardar_estado_en_sheets(contacto_id, estado):
+def guardar_estado_contacto_en_sheets_n(contacto_id, estado):
     hoja = conectar_hoja("Contactos")
     registros = hoja.get_all_records()
     for idx, fila in enumerate(registros, start=2):

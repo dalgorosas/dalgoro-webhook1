@@ -51,6 +51,11 @@ def guardar_estado(chat_id, nuevo_estado):
     nuevo_estado["ultima_interaccion"] = datetime.now(zona_ecuador).isoformat()
     print(f"📦 Estado a guardar en DB para {chat_id}: {nuevo_estado}")
     db.upsert(nuevo_estado, Conversacion.chat_id == chat_id)
+    try:
+        from google_sheets_utils import guardar_estado_en_sheets
+        guardar_estado_en_sheets(chat_id, nuevo_estado)
+    except Exception as e:
+        print(f"⚠️ No se pudo guardar en Sheets: {e}")
 
 def reiniciar_estado(chat_id):
     print(f"🗑 Reiniciando estado para {chat_id}")
