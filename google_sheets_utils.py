@@ -40,7 +40,7 @@ def conectar_hoja(nombre_hoja):
 def cargar_estados_desde_sheets():
     # Cargar los estados desde la hoja "Estado" en Sheets y convertirlos en dict
     import gspread
-    from .google_sheets_utils import obtener_credenciales
+    from google_sheets_utils import obtener_credenciales
 
     creds = obtener_credenciales()
     client = gspread.authorize(creds)
