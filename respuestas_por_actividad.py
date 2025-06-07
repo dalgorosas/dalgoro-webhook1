@@ -141,3 +141,26 @@ for actividad in [
 def obtener_respuesta_por_actividad(actividad, mensaje_usuario):
     flujo = FLUJOS_POR_ACTIVIDAD.get(actividad, {})
     return flujo.get("agradecimiento", "✅ Gracias por su mensaje.")
+
+def detectar_actividad(texto):
+    texto = texto.lower()
+    if "bananera" in texto:
+        return "bananera"
+    elif "camaronera" in texto:
+        return "camaronera"
+    elif "cacaotera" in texto:
+        return "cacaotera"
+    elif "minería" in texto or "mineria" in texto:
+        return "mineria"
+    elif "ciclo corto" in texto or "maíz" in texto or "arroz" in texto or "hortaliza" in texto:
+        return "ciclo_corto"
+    elif "avicola" in texto or "avícola" in texto or "pollos" in texto or "gallinas" in texto:
+        return "granja_avicola"
+    elif "porcino" in texto or "porcina" in texto or "cerdos" in texto or "chanchos" in texto:
+        return "granja_porcina"
+    elif "hotel" in texto:
+        return "hotel"
+    elif "industria" in texto or "industrial" in texto:
+        return "industria"
+    else:
+        return "otros"
