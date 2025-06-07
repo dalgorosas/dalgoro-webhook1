@@ -40,6 +40,49 @@ def conectar_hoja(nombre_hoja):
     hoja = cliente.open_by_url(url_hoja).worksheet(nombre_hoja)
     return hoja
 
+def cargar_estados_desde_sheets():
+    # Debe retornar un diccionario con los estados en formato:
+    # {"593984770663@c.us": {"actividad": ..., "etapa": ..., "fase": ..., ...}, ...}
+    import json
+    import gspread
+    from oauth2client.service_account import ServiceAccountCredentials
+
+    scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+    creds = ServiceAccountCredentials.from_json_keyfile_name("credenciales.json", scope)
+    client = gspread.authorize(creds)
+
+    sheet = client.open("estado_usuarios").worksheet("Estado")
+    registros = sheet.get_all_records()
+
+    estado_dict = {}
+    for fila in registros:
+        chat_id = fila["chat_id"]
+        estado_dict[chat_id] = {
+            "actividad": fila.get("actividad"),
+            "etapa": fila.get("etapa"),
+            "fase": fila.get("fase"),
+            "ultima_interaccion": fila.get("ultima_interaccion")
+        }
+    return estado_dict
+
+
+def guardar_estado_en_sheets(contacto_id, estado):
+    hoja = conectar_hoja("Contactos")
+    registros = hoja.get_all_records()
+    for idx, fila in enumerate(registros, start=2):
+        if str(fila["ID_Contacto"]) == str(contacto_id):
+            hoja.update(f"B{idx}", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+            hoja.update(f"C{idx}", estado.get("actividad", ""))
+            hoja.update(f"D{idx}", estado.get("etapa", "inicio"))
+            return
+    # Si no lo encuentra, agrega uno nuevo
+    hoja.append_row([
+        contacto_id,
+        datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        estado.get("actividad", ""),
+        estado.get("etapa", "inicio")
+    ])
+
 class SheetsManager:
     def __init__(self):
         self.contactos = conectar_hoja("Contactos")
@@ -195,3 +238,31 @@ def actualizar_estado_cita(contacto, nuevo_estado, observaciones_adicionales="")
             return
 
     print(f"⚠️ No se encontró cita activa para {contacto}.")
+
+def cargar_estado_desde_sheets(contacto_id):
+    hoja = conectar_hoja("Contactos")
+    registros = hoja.get_all_records()
+    for idx, fila in enumerate(registros, start=2):  # empieza en 2 por encabezado
+        if str(fila.get("ID_Contacto", "")).strip() == str(contacto_id).strip():
+            return {
+                "actividad": fila.get("Actividad", "").strip().lower(),
+                "etapa": fila.get("Etapa_Actual", "inicio")
+            }
+    return None
+
+def guardar_estado_en_sheets(contacto_id, estado):
+    hoja = conectar_hoja("Contactos")
+    registros = hoja.get_all_records()
+    for idx, fila in enumerate(registros, start=2):
+        if str(fila.get("ID_Contacto", "")).strip() == str(contacto_id).strip():
+            hoja.update(f"B{idx}", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+            hoja.update(f"C{idx}", estado.get("actividad", ""))
+            hoja.update(f"D{idx}", estado.get("etapa", "inicio"))
+            return
+    # Si no lo encuentra, agrega uno nuevo
+    hoja.append_row([
+        contacto_id,
+        datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        estado.get("actividad", ""),
+        estado.get("etapa", "inicio")
+    ])

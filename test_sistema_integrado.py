@@ -1,6 +1,7 @@
 import os
 from datetime import datetime
 from zoneinfo import ZoneInfo
+from estado_storage import obtener_estado_seguro
 
 # Importar componentes principales
 from gestor_conversacion import manejar_conversacion, reiniciar_conversacion
@@ -31,6 +32,7 @@ contactos_sheet.append((chat_id, "nuevo contacto", actividad_simulada))
 
 # Paso 3: Simular segundo mensaje (tengo permiso)
 mensaje2 = "Sí, ya tengo permiso ambiental."
+estado_prev = obtener_estado_seguro(chat_id)
 respuesta2 = manejar_conversacion(chat_id, mensaje2, actividad_simulada, ahora)
 print(f"🟢 Bot responde: {respuesta2}")
 mensajes_sheet.append((chat_id, mensaje2, respuesta2, ahora))
