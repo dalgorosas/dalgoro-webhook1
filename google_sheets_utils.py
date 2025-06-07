@@ -1,18 +1,15 @@
-import gspread
 import os
 import json
-from datetime import datetime
+import gspread
+from datetime import datetime, timedelta
 from oauth2client.service_account import ServiceAccountCredentials
+import pytz
 
 # Ámbitos de acceso para Google Sheets y Drive
 SCOPE = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
 
 # ID del Google Sheet (reemplaza con tu ID real)
 SHEET_ID = "1RggJz98tnR86fo_AspwLWUVOIABn6vVrvojAkfQAqHc"
-
-import os
-import json
-from oauth2client.service_account import ServiceAccountCredentials
 
 def obtener_credenciales():
     try:
@@ -41,14 +38,11 @@ def conectar_hoja(nombre_hoja):
     return hoja
 
 def cargar_estados_desde_sheets():
-    # Debe retornar un diccionario con los estados en formato:
-    # {"593984770663@c.us": {"actividad": ..., "etapa": ..., "fase": ..., ...}, ...}
-    import json
+    # Cargar los estados desde la hoja "Estado" en Sheets y convertirlos en dict
     import gspread
-    from oauth2client.service_account import ServiceAccountCredentials
+    from .google_sheets_utils import obtener_credenciales
 
-    scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-    creds = ServiceAccountCredentials.from_json_keyfile_name("credenciales.json", scope)
+    creds = obtener_credenciales()
     client = gspread.authorize(creds)
 
     sheet = client.open("estado_usuarios").worksheet("Estado")
@@ -64,7 +58,6 @@ def cargar_estados_desde_sheets():
             "ultima_interaccion": fila.get("ultima_interaccion")
         }
     return estado_dict
-
 
 def guardar_estado_en_sheets(contacto_id, estado):
     hoja = conectar_hoja("Contactos")
@@ -135,9 +128,6 @@ sheets_manager = SheetsManager()
 # ----------------------------
 # FUNCIONES PARA FOLLOW-UP AUTOMÁTICO
 # ----------------------------
-
-from datetime import datetime, timedelta
-import pytz
 
 ZONA_EC = pytz.timezone("America/Guayaquil")
 
