@@ -38,26 +38,31 @@ def conectar_hoja(nombre_hoja):
     return hoja
 
 def cargar_estados_desde_sheets():
-    # Cargar los estados desde la hoja "Estado" en Sheets y convertirlos en dict
-    import gspread
     from google_sheets_utils import obtener_credenciales
+    import gspread
 
-    creds = obtener_credenciales()
-    client = gspread.authorize(creds)
+    try:
+        creds = obtener_credenciales()
+        client = gspread.authorize(creds)
+        sheet = client.open_by_key(SHEET_ID).worksheet("Estado")
+        registros = sheet.get_all_records()
 
-    sheet = client.open("estado_usuarios").worksheet("Estado")
-    registros = sheet.get_all_records()
+        estado_dict = {}
+        for fila in registros:
+            chat_id = str(fila.get("chat_id", "")).strip()
+            if chat_id:
+                estado_dict[chat_id] = {
+                    "actividad": fila.get("actividad", "").strip(),
+                    "etapa": fila.get("etapa", "").strip(),
+                    "fase": fila.get("fase", "").strip(),
+                    "ultima_interaccion": fila.get("ultima_interaccion", "").strip()
+                }
+        print(f"✅ Estado cargado desde Google Sheets: {len(estado_dict)} registros")
+        return estado_dict
 
-    estado_dict = {}
-    for fila in registros:
-        chat_id = fila["chat_id"]
-        estado_dict[chat_id] = {
-            "actividad": fila.get("actividad"),
-            "etapa": fila.get("etapa"),
-            "fase": fila.get("fase"),
-            "ultima_interaccion": fila.get("ultima_interaccion")
-        }
-    return estado_dict
+    except Exception as e:
+        print(f"❌ Error accediendo a hoja 'Estado': {e}")
+        return {}
 
 def guardar_estado_en_sheets(contacto_id, estado):
     hoja = conectar_hoja("Contactos")
