@@ -123,7 +123,7 @@ def recibir():
 
     respuesta = manejar_conversacion(chat_id, mensaje, None, ultima_interaccion)
 
-    if len(respuesta) > 1000:
+    if respuesta and len(respuesta) > 1000:
         respuesta = respuesta[:997] + "..."
 
     # Registrar y enviar la respuesta
