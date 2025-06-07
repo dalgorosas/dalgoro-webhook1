@@ -73,3 +73,12 @@ def obtener_estado_seguro(chat_id):
             "fase": "inicio",
             "ultima_interaccion": datetime.now().isoformat()
         }
+
+def mensaje_ya_procesado(chat_id, mensaje_id):
+    estado = obtener_estado(chat_id)
+    return estado.get("ultimo_mensaje_id") == mensaje_id
+
+def registrar_mensaje_procesado(chat_id, mensaje_id):
+    estado = obtener_estado(chat_id)
+    estado["ultimo_mensaje_id"] = mensaje_id
+    guardar_estado(chat_id, estado)

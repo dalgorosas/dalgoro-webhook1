@@ -4,6 +4,7 @@ from google_sheets_utils import sheets_manager
 from config import Config
 from datetime import datetime
 from bot import enviar_mensaje
+from estado_storage import mensaje_ya_procesado, registrar_mensaje_procesado
 import requests
 import logging
 import json
@@ -107,6 +108,11 @@ def recibir():
     else:
         ultima_interaccion = datetime.now()
 
+    # ❗ Evitar procesar dos veces el mismo mensaje
+    if mensaje_ya_procesado(chat_id, mensaje_id):
+        print(f"⏹️ Mensaje ya procesado anteriormente: {mensaje_id}")
+        return jsonify({"status": "ya_procesado"}), 200
+
     respuesta = manejar_conversacion(chat_id, mensaje, None, ultima_interaccion)
 
     if len(respuesta) > 1000:
@@ -119,8 +125,8 @@ def recibir():
         logger.warning(f"❌ Falló el envío a {telefono}. Respuesta: {respuesta}")
         # Opcional: registrar en Google Sheets el fallo
     else:
+        registrar_mensaje_procesado(chat_id, mensaje_id)
         sheets_manager.log_message(telefono, respuesta, "Enviado", "Bot")
-
 
     return jsonify({"status": "ok"}), 200
 
