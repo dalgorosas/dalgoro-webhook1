@@ -83,7 +83,7 @@ def cargar_estados_desde_sheets():
     print(f"✅ Se cargaron {len(estados)} estados desde Sheets.")
     return estados
 
-def guardar_estado_contacto_en_sheets(contacto_id, estado):
+def guardar_estado_a(contacto_id, estado):
     hoja = conectar_hoja("Contactos")
     registros = hoja.get_all_records()
     for idx, fila in enumerate(registros, start=2):
@@ -264,7 +264,7 @@ def cargar_estado_desde_sheets(contacto_id):
             }
     return None
 
-def guardar_estado_contacto_en_sheets_n(contacto_id, estado):
+def guardar_estado_b(contacto_id, estado):
     hoja = conectar_hoja("Contactos")
     registros = hoja.get_all_records()
     for idx, fila in enumerate(registros, start=2):
