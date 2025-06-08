@@ -119,7 +119,7 @@ class SheetsManager:
 def registrar_mensaje(chat_id, mensaje, tipo, canal):
     from datetime import datetime
     hoja = conectar_hoja("Mensajes")
-    ahora = datetime.now(ZONA_HORARIA_EC).isoformat("%Y-%m-%d %H:%M:%S")
+    ahora = datetime.now(ZONA_HORARIA_EC).strftime("%Y-%m-%d %H:%M:%S")
     hoja.append_row([
         chat_id,    # A - Teléfono
         ahora,      # B - Fecha
