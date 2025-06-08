@@ -107,12 +107,22 @@ def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual):
 
     # ⚠️ Iniciar con mensaje inicial si el estado está vacío y no está esperando actividad
     if not estado.get("actividad") and not estado.get("etapa") and fase_actual != "esperando_actividad":
+        actividad_detectada = detectar_actividad(mensaje)
+        if actividad_detectada:
+            estado["actividad"] = actividad_detectada
+            estado["etapa"] = "introduccion"
+            estado["fase"] = "actividad_detectada"
+            guardar_estado(chat_id, estado)
+            registrar_mensaje(chat_id, mensaje)
+            print(f"🧠 Actividad detectada automáticamente desde mensaje inicial: {actividad_detectada}")
+            return obtener_respuesta_por_actividad(actividad_detectada, "introduccion")
+
         estado["fase"] = "inicio"
         estado["etapa"] = ""
         estado["ultima_interaccion"] = fecha_actual.isoformat() if fecha_actual else datetime.now(ZONA_HORARIA_EC).isoformat()
         guardar_estado(chat_id, estado)
         registrar_mensaje(chat_id, mensaje)
-        print(f"📤 Enviando RESPUESTA_INICIAL a {chat_id} (reinicio por estado vacío)")
+        print(f"📤 Enviando RESPUESTA_INICIAL a {chat_id} (reinicio por estado vacío sin detección)")
         return RESPUESTA_INICIAL
 
     # ✅ Detectar actividad si aún no está definida
