@@ -154,7 +154,7 @@ def obtener_respuesta_por_actividad(actividad, etapa):
         return "📝 Estamos para ayudarle. ¿Podría indicarnos si ya cuenta con permisos ambientales o desea iniciar el proceso?"
 
 def detectar_actividad(texto):
-    texto = texto.lower()
+    texto = texto.lower().strip()
 
     if any(p in texto for p in [
         "banano", "bananera", "finca bananera", "plantación de banano", "guineo", "guineal", "banana"
@@ -201,12 +201,9 @@ def detectar_actividad(texto):
     ]):
         return "industria"
 
-    else:
+    # Si el texto es suficientemente largo, se asume como "otros"
+    if len(texto) >= 10:
         return "otros"
 
-    # Solo devolver 'otros' si el texto tiene contenido
-if len(texto.strip()) >= 10:
-    return "otros"
-
-# Si no hay coincidencia clara, mejor no asumir
-return None
+    # Si no hay coincidencia ni suficiente información
+    return None
