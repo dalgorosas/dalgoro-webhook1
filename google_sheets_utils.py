@@ -4,9 +4,16 @@ import gspread
 from datetime import datetime, timedelta
 from oauth2client.service_account import ServiceAccountCredentials
 import pytz
+from datetime import timezone, timedelta
+ZONA_HORARIA_EC = timezone(timedelta(hours=-5))
+
 
 # Ámbitos de acceso para Google Sheets y Drive
 SCOPE = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+
+def agregar_fila_a_hoja(nombre_hoja, fila):
+    hoja = conectar_hoja(nombre_hoja)
+    hoja.append_row(fila)
 
 # ID del Google Sheet (reemplaza con tu ID real)
 SHEET_ID = "1RggJz98tnR86fo_AspwLWUVOIABn6vVrvojAkfQAqHc"
@@ -83,23 +90,6 @@ def cargar_estados_desde_sheets():
     print(f"✅ Se cargaron {len(estados)} estados desde Sheets.")
     return estados
 
-def guardar_estado_a(contacto_id, estado):
-    hoja = conectar_hoja("Contactos")
-    registros = hoja.get_all_records()
-    for idx, fila in enumerate(registros, start=2):
-        if str(fila["ID_Contacto"]) == str(contacto_id):
-            hoja.update(f"B{idx}", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-            hoja.update(f"C{idx}", estado.get("actividad", ""))
-            hoja.update(f"D{idx}", estado.get("etapa", "inicio"))
-            return
-    # Si no lo encuentra, agrega uno nuevo
-    hoja.append_row([
-        contacto_id,
-        datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        estado.get("actividad", ""),
-        estado.get("etapa", "inicio")
-    ])
-
 class SheetsManager:
     def __init__(self):
         self.contactos = conectar_hoja("Contactos")
@@ -108,12 +98,12 @@ class SheetsManager:
     def update_contact(self, telefono):
         contactos = self.contactos.get_all_records()
         if not any(c["Teléfono"] == telefono for c in contactos):
-            self.contactos.append_row([telefono, datetime.now().strftime("%Y-%m-%d %H:%M:%S")])
+            self.contactos.append_row([telefono, datetime.now(ZONA_HORARIA_EC).isoformat("%Y-%m-%d %H:%M:%S")])
 
     def log_message(self, telefono, mensaje, tipo, canal):
         try:
             hoja = conectar_hoja("Mensajes")
-            ahora = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            ahora = datetime.now(ZONA_HORARIA_EC).isoformat()("%Y-%m-%d %H:%M:%S")
             hoja.append_row([
                 telefono,      # A - Teléfono
                 ahora,         # B - Fecha
@@ -129,7 +119,7 @@ class SheetsManager:
 def registrar_mensaje(chat_id, mensaje, tipo, canal):
     from datetime import datetime
     hoja = conectar_hoja("Mensajes")
-    ahora = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    ahora = datetime.now(ZONA_HORARIA_EC).isoformat("%Y-%m-%d %H:%M:%S")
     hoja.append_row([
         chat_id,    # A - Teléfono
         ahora,      # B - Fecha
@@ -264,19 +254,5 @@ def cargar_estado_desde_sheets(contacto_id):
             }
     return None
 
-def guardar_estado_b(contacto_id, estado):
-    hoja = conectar_hoja("Contactos")
-    registros = hoja.get_all_records()
-    for idx, fila in enumerate(registros, start=2):
-        if str(fila.get("ID_Contacto", "")).strip() == str(contacto_id).strip():
-            hoja.update(f"B{idx}", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-            hoja.update(f"C{idx}", estado.get("actividad", ""))
-            hoja.update(f"D{idx}", estado.get("etapa", "inicio"))
-            return
-    # Si no lo encuentra, agrega uno nuevo
-    hoja.append_row([
-        contacto_id,
-        datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        estado.get("actividad", ""),
-        estado.get("etapa", "inicio")
-    ])
+def registrar_mensaje_seguimiento(chat_id, mensaje, fecha_hora):
+    registrar_mensaje(chat_id, mensaje, tipo="Seguimiento", canal="Bot")

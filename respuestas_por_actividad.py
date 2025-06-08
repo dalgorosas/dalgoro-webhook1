@@ -144,23 +144,53 @@ def obtener_respuesta_por_actividad(actividad, mensaje_usuario):
 
 def detectar_actividad(texto):
     texto = texto.lower()
-    if "bananera" in texto:
+
+    if any(p in texto for p in [
+        "banano", "bananera", "finca bananera", "plantación de banano", "guineo", "guineal", "banana"
+    ]):
         return "bananera"
-    elif "camaronera" in texto:
+
+    elif any(p in texto for p in [
+        "camaronera", "camarón", "piscina camaronera", "piscinas", "camaronicultura", "piscinas de camarón"
+    ]):
         return "camaronera"
-    elif "cacaotera" in texto:
-        return "cacaotera"
-    elif "minería" in texto or "mineria" in texto:
+
+    elif any(p in texto for p in [
+        "minería", "mina", "material pétreo", "extracción minera", "cantera", "áridos", "grava", "ripio", "piedra"
+    ]):
         return "mineria"
-    elif "ciclo corto" in texto or "maíz" in texto or "arroz" in texto or "hortaliza" in texto:
-        return "ciclo_corto"
-    elif "avicola" in texto or "avícola" in texto or "pollos" in texto or "gallinas" in texto:
-        return "granja_avicola"
-    elif "porcino" in texto or "porcina" in texto or "cerdos" in texto or "chanchos" in texto:
-        return "granja_porcina"
-    elif "hotel" in texto:
+
+    elif any(p in texto for p in [
+        "cacao", "cacaotera", "plantación de cacao", "cacaotal", "trabajo con cacao", "finca de cacao"
+    ]):
+        return "cacaotera"
+
+    elif any(p in texto for p in [
+        "ciclo corto", "maíz", "arroz", "hortalizas", "cultivo pequeño", "frijol", "frejol", "legumbres", "tomate", "cebolla", "verde"
+    ]):
+        return "ciclo corto"
+
+    elif any(p in texto for p in [
+        "cerdo", "porcino", "granja porcina", "chancho", "lechón", "cría de cerdos", "cerdos", "chanchería"
+    ]):
+        return "granja porcina"
+
+    elif any(p in texto for p in [
+        "pollo", "gallina", "granja avícola", "aves", "pollos", "ponedoras", "gallinero", "pollera"
+    ]):
+        return "granja avicola"
+
+    elif any(p in texto for p in [
+        "hotel", "hospedaje", "hostal", "turismo", "alojamiento", "cabañas", "resort"
+    ]):
         return "hotel"
-    elif "industria" in texto or "industrial" in texto:
+
+    elif any(p in texto for p in [
+        "industria", "fábrica", "empresa industrial", "procesadora", "procesamiento", "industrial"
+    ]):
         return "industria"
+
     else:
         return "otros"
+
+    return None
