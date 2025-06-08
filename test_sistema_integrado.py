@@ -10,13 +10,25 @@ def probar_flujo_completo(chat_id, mensajes_usuario):
     print(f"\n📲 Iniciando simulación para: {chat_id}")
     reiniciar_conversacion(chat_id)
 
+    actividad = None  # Variable dinámica por si se detecta automáticamente
+
     for mensaje in mensajes_usuario:
         print(f"\n👤 Usuario: {mensaje}")
-        respuesta = manejar_conversacion(chat_id, mensaje, actividad=None, fecha_actual=datetime.now(ZONA_HORARIA_EC))
+        respuesta = manejar_conversacion(
+            chat_id,
+            mensaje,
+            actividad=actividad,
+            fecha_actual=datetime.now(ZONA_HORARIA_EC)
+        )
         if respuesta:
             print(f"🤖 Bot: {respuesta}")
         else:
             print("🤖 Bot no respondió (posible bloqueo o duplicado)")
+
+        # Verificar si se detectó una actividad nueva desde estado
+        estado = obtener_estado_seguro(chat_id)
+        if estado.get("actividad"):
+            actividad = estado["actividad"]
 
     print("\n📦 Estado final almacenado:")
     estado = obtener_estado_seguro(chat_id)
@@ -25,29 +37,29 @@ def probar_flujo_completo(chat_id, mensajes_usuario):
 # 🧪 Escenarios de prueba
 pruebas = {
     "cliente_1": [
-        "Hola",  # Activación inicial
-        "Tengo una finca bananera",  # Detectar actividad
-        "Sí tengo permiso",  # Etapa permiso_si
-        "Puedo el jueves a las 10am en oficina",  # Agenda
+        "Hola",
+        "Tengo una finca bananera",
+        "Sí tengo permiso",
+        "Puedo el jueves a las 10am en oficina",
     ],
     "cliente_2": [
-        "Hola, necesito ayuda",  # Activación
-        "es una camaronera",  # Detectar actividad
-        "No tengo ningún permiso aún",  # Etapa permiso_no
-        "pueden venir el viernes a las 8am a la finca",  # Agenda
+        "Hola, necesito ayuda",
+        "es una camaronera",
+        "No tengo ningún permiso aún",
+        "pueden venir el viernes a las 8am a la finca",
     ],
     "cliente_3": [
-        "Hola",  # Activación
-        "Trabajo con cacao",  # Actividad ambigua: espera detectar como cacaotera
-        "ya tengo todo en regla",  # Etapa permiso_si
-        "el lunes a las 14:00 está bien en oficina",  # Agenda
+        "Hola",
+        "Trabajo con cacao",
+        "ya tengo todo en regla",
+        "el lunes a las 14:00 está bien en oficina",
     ],
     "cliente_4": [
-        "buenas tardes",  # Activación
-        "ninguna de las anteriores",  # Actividad no reconocida
-        "cultivo de ciclo corto",  # Aclaración
-        "sí, tengo permiso",  # permiso_si
-        "agendemos el martes a las 9am",  # Agenda
+        "buenas tardes",
+        "ninguna de las anteriores",
+        "cultivo de ciclo corto",
+        "sí, tengo permiso",
+        "agendemos el martes a las 9am",
     ],
 }
 
