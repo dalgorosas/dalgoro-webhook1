@@ -100,7 +100,7 @@ def bloquear_chat(chat_id, segundos=1.5):
     if chat_id not in locks_chat:
         locks_chat[chat_id] = Lock()
 
-def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual):
+def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual): 
     estado = obtener_estado_seguro(chat_id)
     etapa_actual = estado.get("etapa")
     fase_actual = estado.get("fase", "inicio")
@@ -169,12 +169,16 @@ def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual):
         elif not estado.get("etapa"):
             estado["etapa"] = "introduccion"
 
-    nueva_etapa = determinar_siguiente_etapa(estado["actividad"], etapa_actual, mensaje)
+    nueva_etapa = determinar_siguiente_etapa(estado["actividad"], estado.get("etapa"), mensaje)
     if nueva_etapa:
         estado["etapa"] = nueva_etapa
 
     etapa_actual = estado.get("etapa")
-    respuesta = None
+
+    # 🔐 Protección: si la etapa está vacía, forzar etapa segura
+    if not etapa_actual:
+        etapa_actual = "introduccion"
+        estado["etapa"] = "introduccion"
 
     # ✅ Control seguro de registro de cita: solo si ya estamos en etapa de cierre
     if etapa_actual == "cierre":
@@ -194,6 +198,7 @@ def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual):
         # Etapas anteriores no deben registrar citas aunque mencionen fechas
         respuesta = obtener_respuesta_por_actividad(estado["actividad"], etapa_actual)
 
+    # 🧠 Guardar estado y registrar mensaje
     estado["ultima_interaccion"] = fecha_actual.isoformat() if fecha_actual else datetime.now(ZONA_HORARIA_EC).isoformat()
     estado["chat_id"] = chat_id
     guardar_estado(chat_id, estado)
@@ -201,6 +206,7 @@ def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual):
 
     print(f"📦 Estado a guardar en DB para {chat_id}: {estado}")
 
+    # ⛑ Fallback si no se obtuvo respuesta
     if not respuesta:
         respuesta = obtener_respuesta_por_actividad(estado["actividad"], estado["etapa"])
 

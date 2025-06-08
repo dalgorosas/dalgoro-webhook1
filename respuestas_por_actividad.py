@@ -138,9 +138,20 @@ for actividad in [
     if "agradecimiento" not in FLUJOS_POR_ACTIVIDAD[actividad]:
         FLUJOS_POR_ACTIVIDAD[actividad]["agradecimiento"] = "✅ Su cita ha sido registrada correctamente. El Ing. Darwin González Romero se comunicará con usted mediante el número 0984770663 para confirmar los detalles. ¡Gracias por confiar en nosotros! 🌿"
 
-def obtener_respuesta_por_actividad(actividad, mensaje_usuario):
+def obtener_respuesta_por_actividad(actividad, etapa):
     flujo = FLUJOS_POR_ACTIVIDAD.get(actividad, {})
-    return flujo.get("agradecimiento", "✅ Gracias por su mensaje.")
+
+    # ⚠️ Protección: si se llama sin etapa válida, no devolver mensaje de cierre
+    if not etapa:
+        return "🤖 Aún no logro comprender su solicitud. ¿Podría explicarnos un poco más sobre su actividad o requerimiento?"
+
+    respuesta = flujo.get(etapa)
+
+    if respuesta:
+        return respuesta
+    else:
+        # Fallback seguro por si se invoca con etapa incorrecta
+        return "📝 Estamos para ayudarle. ¿Podría indicarnos si ya cuenta con permisos ambientales o desea iniciar el proceso?"
 
 def detectar_actividad(texto):
     texto = texto.lower()
@@ -193,4 +204,9 @@ def detectar_actividad(texto):
     else:
         return "otros"
 
-    return None
+    # Solo devolver 'otros' si el texto tiene contenido
+if len(texto.strip()) >= 10:
+    return "otros"
+
+# Si no hay coincidencia clara, mejor no asumir
+return None
