@@ -98,12 +98,12 @@ class SheetsManager:
     def update_contact(self, telefono):
         contactos = self.contactos.get_all_records()
         if not any(c["Teléfono"] == telefono for c in contactos):
-            self.contactos.append_row([telefono, datetime.now(ZONA_HORARIA_EC).isoformat("%Y-%m-%d %H:%M:%S")])
+            self.contactos.append_row([telefono, datetime.now(ZONA_HORARIA_EC).strftime("%Y-%m-%d %H:%M:%S")])
 
     def log_message(self, telefono, mensaje, tipo, canal):
         try:
             hoja = conectar_hoja("Mensajes")
-            ahora = datetime.now(ZONA_HORARIA_EC).isoformat()("%Y-%m-%d %H:%M:%S")
+            ahora = datetime.now(ZONA_HORARIA_EC).strftime("%Y-%m-%d %H:%M:%S")
             hoja.append_row([
                 telefono,      # A - Teléfono
                 ahora,         # B - Fecha
@@ -119,7 +119,7 @@ class SheetsManager:
 def registrar_mensaje(chat_id, mensaje, tipo, canal):
     from datetime import datetime
     hoja = conectar_hoja("Mensajes")
-    ahora = datetime.now(ZONA_HORARIA_EC).strftime("%Y-%m-%d %H:%M:%S")
+    ahora = datetime.now(ZONA_HORARIA_EC).strftime("%Y-%m-%d %H:%M:%S")  # ✅ Correcto
     hoja.append_row([
         chat_id,    # A - Teléfono
         ahora,      # B - Fecha
