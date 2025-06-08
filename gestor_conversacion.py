@@ -75,7 +75,7 @@ def determinar_siguiente_etapa(actividad, etapa_actual, mensaje_usuario):
 
     elif etapa_actual in ["cierre", "aclaracion_cierre"]:
         cita = extraer_fecha_y_hora(mensaje_usuario)
-        if cita:
+        if cita and cita.get("fecha") and cita.get("hora"):
             return "agradecimiento"
         else:
             return "aclaracion_cierre"
