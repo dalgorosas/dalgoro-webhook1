@@ -59,9 +59,16 @@ def determinar_siguiente_etapa(actividad, etapa_actual, mensaje):
 
     # ✅ ETAPA: permiso otorgado o no
     elif etapa_actual in ["permiso_si", "permiso_no", "aclaracion_permiso_si", "aclaracion_permiso_no"]:
-        if any(p in mensaje for p in ["sí", "si", "quiero", "agendar", "evaluación", "pueden venir", "puede venir", "sí deseo"]):
+        if any(p in mensaje for p in ["sí", "si", "claro", "por supuesto", "afirmativo", "de acuerdo", "ok", "vale", "está bien", "listo", "seguro", "acepto", "confirmo",
+            "quiero", "me interesa", "me gustaría", "deseo", "necesito", "prefiero", "sí deseo", "sí quiero", "sí necesito", "sí me interesa",
+            "agendar", "coordinemos", "calendarizar", "programar", "ponme una cita", "hazme la cita", "coordinemos visita",
+            "pueden venir", "puede venir", "vengan por favor", "quiero que vengan", "agenden visita", "sí, visítenme", "pueden ir",
+            "sii", "siii", "quieroo", "quiero agendar", "quiero cita", "si quiero", "si deseo", "si vienen"]):
             return "cierre"
-        elif any(p in mensaje for p in ["no", "todavía", "aún"]):
+        elif any(p in mensaje for p in ["no", "nop", "negativo", "ni de broma", "jamás", "nunca", "para nada", "no quiero", "no deseo", "no necesito",
+            "no me interesa", "no por ahora", "no todavía", "todavía", "aún", "aun no", "no he decidido", "más adelante",
+            "quizá después", "no en este momento", "no por el momento", "otro día", "en otra ocasión", "después",
+            "ahorita no", "déjame pensarlo", "necesito pensarlo", "no estoy seguro", "no estoy lista", "no tengo tiempo"]):
             return etapa_actual  # ❗ Cliente no está listo, mantenemos etapa
         else:
             # Devuelve aclaración específica de esta etapa
@@ -89,8 +96,12 @@ def determinar_siguiente_etapa(actividad, etapa_actual, mensaje):
             return "agradecimiento"
     
         if any(p in mensaje.lower() for p in [
-            "quiero", "agendar", "visita", "evaluación", "evaluar", 
-            "pueden venir", "vengan", "necesito que me visiten"
+            "agendar", "programar", "calendarizar", "coordinar visita", "ponme una cita", "hazme la cita", "quiero agendar", "deseo agendar",
+            "necesito agendar", "quiero coordinar", "sí, agenda", "ya quiero agendar",
+            "visita", "visítenme", "visíteme", "me pueden visitar", "quiero que me visiten", "necesito que me visiten", "pueden venir",
+            "puede venir", "vengan", "venga por favor", "que vengan", "necesito visita", "me gustaría que vengan", "quiero reunión presencial",
+            "evaluación", "evaluar", "evaluación técnica", "revisión técnica", "revisar documentos", "quiero una evaluación", "pueden evaluar",
+            "revisar mis permisos", "quiero que revisen", "necesito revisión", "sí, revisar"
         ]):
             return "cierre"
 
