@@ -122,9 +122,19 @@ def recibir():
         return jsonify({"status": "ya_procesado"}), 200
 
     respuesta = manejar_conversacion(chat_id, mensaje, None, ultima_interaccion)
+    print(f"📤 Respuesta generada para {telefono}: {respuesta}")
+
+    if not respuesta:
+        logger.warning(f"⚠️ No se generó respuesta para {telefono}.")
+        sheets_manager.log_message(telefono, "Sin respuesta generada", "Advertencia", "Bot")
+        return jsonify({"status": "sin_respuesta"}), 200
 
     if respuesta and len(respuesta) > 1000:
         respuesta = respuesta[:997] + "..."
+
+    if not respuesta:
+        logger.warning(f"⚠️ No se generó respuesta para {telefono}.")
+        return jsonify({"status": "sin_respuesta"}), 200
 
     # Registrar y enviar la respuesta
     resultado_envio = enviar_mensaje(telefono, respuesta)

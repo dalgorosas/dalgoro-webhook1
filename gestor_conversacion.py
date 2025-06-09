@@ -65,7 +65,10 @@ def determinar_siguiente_etapa(actividad, etapa_actual, mensaje):
             return etapa_actual  # ❗ Cliente no está listo, mantenemos etapa
         else:
             # Devuelve aclaración específica de esta etapa
-            return f"aclaracion_{etapa_actual}"
+            if etapa_actual.startswith("aclaracion_"):
+                return etapa_actual  # Ya está en aclaración, no repetir
+            else:
+                return f"aclaracion_{etapa_actual}"
 
     # ✅ ETAPA: cierre
     elif etapa_actual in ["cierre", "aclaracion_cierre"]:

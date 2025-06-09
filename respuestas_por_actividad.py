@@ -141,16 +141,22 @@ for actividad in [
 def obtener_respuesta_por_actividad(actividad, etapa):
     flujo = FLUJOS_POR_ACTIVIDAD.get(actividad, {})
 
-    # ⚠️ Protección: si se llama sin etapa válida, no devolver mensaje de cierre
     if not etapa:
         return "🤖 Aún no logro comprender su solicitud. ¿Podría explicarnos un poco más sobre su actividad o requerimiento?"
 
-    respuesta = flujo.get(etapa)
+    # Limpieza automática de errores comunes como 'aclaracion_aclaracion_permiso_si'
+    etapa_limpia = etapa
+    while etapa_limpia.startswith("aclaracion_aclaracion_"):
+        etapa_limpia = etapa_limpia.replace("aclaracion_aclaracion_", "aclaracion_", 1)
 
+    if etapa_limpia not in flujo:
+        etapa_limpia = etapa_limpia.replace("aclaracion_", "")
+    
+    respuesta = flujo.get(etapa_limpia)
+    
     if respuesta:
         return respuesta
     else:
-        # Fallback seguro por si se invoca con etapa incorrecta
         return "📝 Estamos para ayudarle. ¿Podría indicarnos si ya cuenta con permisos ambientales o desea iniciar el proceso?"
 
 def detectar_actividad(texto):
