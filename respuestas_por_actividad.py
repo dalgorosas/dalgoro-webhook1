@@ -8,15 +8,15 @@ Bananera, camaronera, minería, cacaotera, cultivo de ciclo corto, granja porcin
 
 FLUJOS_POR_ACTIVIDAD = {
     "bananera": {
-        "introduccion": "🍌 ¡Qué bueno saber de su actividad! Nosotros estamos especializados en apoyar a fincas bananeras con todo lo relacionado con **permisos ambientales** para evitar sanciones. ¿Usted ya cuenta con algún tipo de permiso, como **registro ambiental** o **licencia**?\n\n👉 **Ya tengo permiso**\n👉 **No tengo permiso**\n👉 **No estoy seguro**",
-        "aclaracion_introduccion": "🙏 Gracias por su mensaje. Para poder ayudarle mejor: ¿usted ya tiene algún **permiso ambiental**, como un **registro** o una **licencia**? Si no está seguro, también podemos ayudarle a identificarlo. Solo respóndanos con: **Sí tengo**, **No tengo**, o **No sé** 😊",
-        "permiso_si": "✅ Perfecto. Podemos revisar si su **documentación ambiental** está vigente y sin observaciones. Esto lo hacemos con una **evaluación gratuita** en su finca o también en su oficina. ¿Le gustaría **agendar** la visita? 📋\n\n👉 **Sí, quiero agendar visita**\n👉 **No sé si está vigente**\n👉 **Creo que está vencido**",
-        "aclaracion_permiso_si": "🙏 Para confirmar: ¿quiere que revisemos sus permisos en una **visita técnica gratuita**? Podemos adaptarnos a su horario y lugar 😊",
-        "permiso_no": "👌 No se preocupe. Podemos ayudarle desde cero. Le ofrecemos una **asesoría gratuita** para explicarle paso a paso lo que necesita. ¿Prefiere que le visitemos en su **finca** o en su **oficina**? 📅\n\n👉 **Sí, quiero asesoría gratuita**\n👉 **¿Cuánto cuesta?** (la asesoría inicial es sin costo)\n👉 **¿Qué documentos necesito?** (le enviaremos una lista sencilla)",
-        "aclaracion_permiso_no": "🙏 Gracias. Nuestra **asesoría inicial no tiene ningún costo**. Le explicamos todo paso a paso para que pueda cumplir con lo necesario. Solo indíquenos si prefiere la reunión en finca o en oficina 😊",
-        "cierre": "🗓 Solo necesitamos que nos indique **día**, **hora** y si prefiere que lo visitemos en su **finca** o en su **oficina**. Esta evaluación es totalmente **gratuita** y sin compromiso 🙌",
-        "aclaracion_cierre": "🙏 No logramos identificar su **disponibilidad**. ¿Podría indicarnos el **día**, la **hora** y el **lugar** para la cita? También puede escribirnos si prefiere otro canal 🌱",
-        "agradecimiento": "🙌 ¡Cita registrada! El **Ing. Darwin González Romero** se pondrá en contacto con usted desde el número **0984770663** para coordinar los detalles. Gracias por confiar en nosotros 🌱"
+        "introduccion": "🍌 ¡Excelente actividad! Justamente nosotros nos especializamos en el sector bananero para facilitar el cumplimiento ambiental y evitar sanciones. ¿Podría indicarnos si ya cuenta con un permiso ambiental como registro o licencia?\n\n👉 Ya tengo permiso\n👉 Aún no tengo ninguno",
+        "aclaracion_introduccion": "🙏 Gracias por su mensaje. ¿Nos podría confirmar si ya cuenta con un permiso ambiental (registro o licencia)? Eso nos ayudará a guiarle mejor 😊",
+        "permiso_si": "✅ Muy bien. Podemos revisar si su documentación está al día y sin observaciones. Ofrecemos una evaluación gratuita en su finca o podemos visitarle en su oficina. ¿Le gustaría agendarla? 📋",
+        "aclaracion_permiso_si": "🙏 Disculpe, ¿desea que revisemos sus permisos en una visita técnica gratuita? Podemos coordinar según su disponibilidad 😊",
+        "permiso_no": "No se preocupe, estamos para ayudarle desde cero. Podemos visitarle para explicarle paso a paso lo que necesita. Es totalmente gratuito. ¿Prefiere que vayamos a su finca o a su oficina? 📅",
+        "aclaracion_permiso_no": "🙏 Gracias por su mensaje. ¿Le interesaría recibir nuestra asesoría gratuita para iniciar su proceso ambiental? Solo indíquenos cómo le es más cómodo reunirse 😊",
+        "cierre": "Solo necesitamos que nos indique día, hora y si desea que lo visitemos en finca o en su oficina. Esta evaluación no tiene ningún costo 🙌",
+        "aclaracion_cierre": "🙏 No logre identificar su disponibilidad. ¿Podría indicarnos día, hora y lugar para su cita? Es sin compromiso y 100% gratuita 🌱",
+        "agradecimiento": "🙌 Su cita ha sido registrada. El Ing. Darwin González Romero se comunicará con usted mediante el número 0984770663 para coordinar los detalles. Gracias por confiar en nosotros 🌱"
     },
 
     "camaronera": {
