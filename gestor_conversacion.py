@@ -201,7 +201,7 @@ def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual):
             return None
 
         if cita and cita.get("fecha") and cita.get("hora"):
-            registrar_cita_en_hoja(chat_id, cita["fecha"], cita["hora"], cita.get("ubicacion"))
+            registrar_cita(chat_id, cita["fecha"], cita["hora"], cita.get("ubicacion"))
             estado["etapa"] = "agradecimiento"
             estado["fase"] = "cita_registrada"  # 🧠 Esto protege de nuevas sugerencias
             respuesta = obtener_respuesta_por_actividad(estado["actividad"], "agradecimiento")
