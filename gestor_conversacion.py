@@ -105,6 +105,7 @@ def bloquear_chat(chat_id, segundos=1.5):
 
 def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual): 
     estado = obtener_estado_seguro(chat_id)
+    es_primera_interaccion = not estado.get("actividad") and not estado.get("etapa") and not estado.get("ultima_interaccion")
     etapa_actual = estado.get("etapa")
     fase_actual = estado.get("fase", "inicio")
 
@@ -118,7 +119,13 @@ def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual):
             guardar_estado(chat_id, estado)
             registrar_mensaje(chat_id, mensaje)
             print(f"🧠 Actividad detectada automáticamente desde mensaje inicial: {actividad_detectada}")
-            return obtener_respuesta_por_actividad(actividad_detectada, "introduccion")
+    
+            # Solo para el PRIMER MENSAJE de la conversación, incluimos el saludo inicial
+            if es_primera_interaccion:
+                return RESPUESTA_INICIAL + "\n\n" + obtener_respuesta_por_actividad(actividad_detectada, "introduccion")
+
+            else:
+                return obtener_respuesta_por_actividad(actividad_detectada, "introduccion")
 
         estado["fase"] = "inicio"
         estado["etapa"] = ""
@@ -189,8 +196,12 @@ def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual):
     if etapa_actual == "cierre":
         cita = extraer_fecha_y_hora(mensaje)
 
+        if estado.get("fase") == "cita_registrada":
+            print(f"🔁 Ya se registró una cita antes para {chat_id}, evitando duplicado.")
+            return None
+
         if cita and cita.get("fecha") and cita.get("hora"):
-            registrar_cita(chat_id, cita["fecha"], cita["hora"], cita.get("ubicacion"))
+            registrar_cita_en_hoja(chat_id, cita["fecha"], cita["hora"], cita.get("ubicacion"))
             estado["etapa"] = "agradecimiento"
             estado["fase"] = "cita_registrada"  # 🧠 Esto protege de nuevas sugerencias
             respuesta = obtener_respuesta_por_actividad(estado["actividad"], "agradecimiento")
