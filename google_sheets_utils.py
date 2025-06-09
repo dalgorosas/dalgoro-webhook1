@@ -64,19 +64,14 @@ def obtener_credenciales():
     return ServiceAccountCredentials.from_json_keyfile_dict(cred_dict, SCOPE)
 
 def conectar_hoja(nombre_hoja):
-    try:
-        creds = obtener_credenciales()
-        cliente = gspread.authorize(creds)
+    creds = obtener_credenciales()
+    cliente = gspread.authorize(creds)
 
-        url_hoja = "https://docs.google.com/spreadsheets/d/1RggJz98tnR86fo_AspwLWUVOIABn6vVrvojAkfQAqHc/edit#gid=0"
-        hoja_calculo = cliente.open_by_url(url_hoja)
+    # Reemplaza esta URL con la URL real de tu Google Sheet
+    url_hoja = "https://docs.google.com/spreadsheets/d/1RggJz98tnR86fo_AspwLWUVOIABn6vVrvojAkfQAqHc/edit#gid=0"
 
-        hoja = hoja_calculo.worksheet(nombre_hoja)
-        return hoja
-
-    except Exception as e:
-        print(f"❌ Error al conectar con la hoja '{nombre_hoja}': {e}")
-        return None
+    hoja = cliente.open_by_url(url_hoja).worksheet(nombre_hoja)
+    return hoja
 
 def cargar_estados_desde_sheets():
     hoja = conectar_hoja("Estado")
@@ -216,21 +211,17 @@ def registrar_cita_en_hoja(
     lugar: ubicación del encuentro
     observaciones: cualquier nota adicional
     """
-    try:
-        hoja = conectar_hoja("Citas")
-        fila = [
-            contacto,
-            fecha_cita,
-            hora,
-            modalidad,
-            lugar,
-            "Pendiente",       # Confirmada por defecto
-            observaciones
-        ]
-        hoja.append_row(fila)
-        print(f"✅ Cita registrada en Sheets: {fila}")
-    except Exception as e:
-        print(f"❌ Error al registrar cita en Sheets para {contacto}: {e}")
+    hoja = conectar_hoja("Citas")
+    fila = [
+        contacto,
+        fecha_cita,
+        hora,
+        modalidad,
+        lugar,
+        "Pendiente",       # Confirmada por defecto
+        observaciones
+    ]
+    hoja.append_row(fila)
 
 def actualizar_estado_cita(contacto, nuevo_estado, observaciones_adicionales=""):
     """
