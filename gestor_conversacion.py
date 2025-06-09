@@ -44,17 +44,9 @@ def formatear_respuesta(respuesta):
         return "\n".join(respuesta)
     return str(respuesta)
 
-def determinar_siguiente_etapa(actividad, etapa_actual, mensaje_usuario):
-    mensaje = mensaje_usuario.lower()
-
-    # 🔁 Flujo especial para "otros"
-    if actividad == "otros":
-        if any(p in mensaje for p in ["quiero", "agendar", "visita", "evaluación", "evaluar", "pueden venir", "puede venir"]):
-            return "cierre"
-        cita = extraer_fecha_y_hora(mensaje_usuario)
-        if cita:
-            return "agradecimiento"
-        return "aclaracion_introduccion"
+def determinar_siguiente_etapa(actividad, etapa_actual, mensaje):
+    if etapa_actual == "agradecimiento":
+        return None  # ⛔ Ya se cerró el ciclo
 
     # ✅ ETAPA: introducción
     if etapa_actual in ["introduccion", "aclaracion_introduccion"]:
@@ -77,7 +69,7 @@ def determinar_siguiente_etapa(actividad, etapa_actual, mensaje_usuario):
 
     # ✅ ETAPA: cierre
     elif etapa_actual in ["cierre", "aclaracion_cierre"]:
-        cita = extraer_fecha_y_hora(mensaje_usuario)
+        cita = extraer_fecha_y_hora(mensaje)
         if cita and cita.get("fecha") and cita.get("hora"):
             return "agradecimiento"
         else:
@@ -87,8 +79,19 @@ def determinar_siguiente_etapa(actividad, etapa_actual, mensaje_usuario):
     elif etapa_actual == "agradecimiento":
         return "agradecimiento"
 
-    # Por defecto, mantener la etapa actual
-    return etapa_actual
+    # 🌐 Flujo especial para "otros"
+    if actividad == "otros":
+        cita = extraer_fecha_y_hora(mensaje)
+        if cita and cita.get("fecha") and cita.get("hora"):
+            return "agradecimiento"
+    
+        if any(p in mensaje.lower() for p in [
+            "quiero", "agendar", "visita", "evaluación", "evaluar", 
+            "pueden venir", "vengan", "necesito que me visiten"
+        ]):
+            return "cierre"
+
+        return "aclaracion_introduccion"
 
 def esta_bloqueado(chat_id):
     ahora = time.time()
@@ -169,9 +172,11 @@ def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual):
         elif not estado.get("etapa"):
             estado["etapa"] = "introduccion"
 
-    nueva_etapa = determinar_siguiente_etapa(estado["actividad"], estado.get("etapa"), mensaje)
-    if nueva_etapa:
-        estado["etapa"] = nueva_etapa
+    # ⛔ Evitar que se reemplace la etapa si ya estamos en agradecimiento
+    if estado.get("etapa") != "agradecimiento":
+        nueva_etapa = determinar_siguiente_etapa(estado["actividad"], estado.get("etapa"), mensaje)
+        if nueva_etapa:
+            estado["etapa"] = nueva_etapa
 
     etapa_actual = estado.get("etapa")
 
@@ -187,6 +192,7 @@ def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual):
         if cita and cita.get("fecha") and cita.get("hora"):
             registrar_cita(chat_id, cita["fecha"], cita["hora"], cita.get("ubicacion"))
             estado["etapa"] = "agradecimiento"
+            estado["fase"] = "cita_registrada"  # 🧠 Esto protege de nuevas sugerencias
             respuesta = obtener_respuesta_por_actividad(estado["actividad"], "agradecimiento")
         else:
             respuesta = obtener_respuesta_por_actividad(estado["actividad"], etapa_actual)
@@ -195,7 +201,6 @@ def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual):
         respuesta = obtener_respuesta_por_actividad(estado["actividad"], "agradecimiento")
 
     else:
-        # Etapas anteriores no deben registrar citas aunque mencionen fechas
         respuesta = obtener_respuesta_por_actividad(estado["actividad"], etapa_actual)
 
     # 🧠 Guardar estado y registrar mensaje
@@ -206,7 +211,6 @@ def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual):
 
     print(f"📦 Estado a guardar en DB para {chat_id}: {estado}")
 
-    # ⛑ Fallback si no se obtuvo respuesta
     if not respuesta:
         respuesta = obtener_respuesta_por_actividad(estado["actividad"], estado["etapa"])
 
