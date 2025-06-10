@@ -199,11 +199,12 @@ def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual):
 
     # ⛔ Evitar que se reemplace la etapa si ya estamos en agradecimiento
     if estado.get("etapa") != "agradecimiento":
-        nueva_etapa = determinar_siguiente_etapa(estado["actividad"], estado.get("etapa"), mensaje)
-        if nueva_etapa:
-            estado["etapa"] = nueva_etapa
-
-    etapa_actual = estado.get("etapa")
+        try:
+            nueva_etapa = determinar_siguiente_etapa(estado["actividad"], estado.get("etapa"), mensaje, estado, chat_id)
+            if nueva_etapa:
+                estado["etapa"] = nueva_etapa
+        except Exception as e:
+            print(f"❌ Error al determinar siguiente etapa para {chat_id}: {e}")
 
     # 🔐 Protección: si la etapa está vacía, forzar etapa segura
     if not etapa_actual:
