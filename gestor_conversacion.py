@@ -87,7 +87,13 @@ def determinar_siguiente_etapa(actividad, etapa_actual, mensaje):
 
     # ✅ ETAPA: agradecimiento (final)
     elif etapa_actual == "agradecimiento":
-        return "agradecimiento"
+        if estado.get("fase") != "cita_registrada":
+            cita = extraer_fecha_y_hora(mensaje)
+            if cita and cita.get("fecha") and cita.get("hora"):
+                registrar_cita(chat_id, cita["fecha"], cita["hora"], cita.get("ubicacion"))
+                estado["fase"] = "cita_registrada"
+        respuesta = obtener_respuesta_por_actividad(estado["actividad"], "agradecimiento")
+
 
     # 🌐 Flujo especial para "otros"
     if actividad == "otros":

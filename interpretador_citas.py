@@ -68,11 +68,19 @@ def extraer_fecha_y_hora(texto):
 
     if fecha_hora:
         fecha_detectada = fecha_hora[0][1].astimezone(ZONA_HORARIA_EC)
+    
+        ubicacion = None
+        if "finca" in texto:
+            ubicacion = "Finca"
+        elif "oficina" in texto:
+            ubicacion = "Oficina"
+    
         return {
             "fecha": fecha_detectada.strftime("%Y-%m-%d"),
-            "hora": fecha_detectada.strftime("%H:%M")
+            "hora": fecha_detectada.strftime("%H:%M"),
+            "ubicacion": ubicacion
         }
-
+    
     # Fallback manual con regex
     hora_detectada = None
     for patron in patrones_hora_ext:
@@ -98,9 +106,16 @@ def extraer_fecha_y_hora(texto):
             break
 
     if fecha_detectada or hora_detectada:
+        ubicacion = None
+        if "finca" in texto:
+            ubicacion = "Finca"
+        elif "oficina" in texto:
+            ubicacion = "Oficina"
+
         return {
             "fecha": fecha_detectada or hoy.strftime("%Y-%m-%d"),
-            "hora": hora_detectada or "09:00"
+            "hora": hora_detectada or "09:00",
+            "ubicacion": ubicacion
         }
 
     return None
