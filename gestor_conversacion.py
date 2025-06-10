@@ -44,12 +44,44 @@ def formatear_respuesta(respuesta):
         return "\n".join(respuesta)
     return str(respuesta)
 
-def determinar_siguiente_etapa(actividad, etapa_actual, mensaje):
+def determinar_siguiente_etapa(actividad, etapa_actual, mensaje, estado, chat_id):
+    # ✅ ETAPA: agradecimiento (final)
     if etapa_actual == "agradecimiento":
-        return None  # ⛔ Ya se cerró el ciclo
+        if estado.get("fase") != "cita_registrada":
+            cita = extraer_fecha_y_hora(mensaje)
+            if cita and cita.get("fecha") and cita.get("hora"):
+                registrar_cita(chat_id, cita["fecha"], cita["hora"], cita.get("ubicacion"))
+                estado["fase"] = "cita_registrada"
+        respuesta = obtener_respuesta_por_actividad(estado["actividad"], "agradecimiento")
+
+    # 🌐 Flujo especial para "otros"
+    elif actividad == "otros":
+        cita = extraer_fecha_y_hora(mensaje)
+        if cita and cita.get("fecha") and cita.get("hora"):
+            return "agradecimiento"
+        
+        if any(p in mensaje.lower() for p in [
+            "agendar", "programar", "calendarizar", "coordinar visita", "ponme una cita", "hazme la cita", "quiero agendar", "deseo agendar",
+            "necesito agendar", "quiero coordinar", "sí, agenda", "ya quiero agendar",
+            "visita", "visítenme", "visíteme", "me pueden visitar", "quiero que me visiten", "necesito que me visiten", "pueden venir",
+            "puede venir", "vengan", "venga por favor", "que vengan", "necesito visita", "me gustaría que vengan", "quiero reunión presencial",
+            "evaluación", "evaluar", "evaluación técnica", "revisión técnica", "revisar documentos", "quiero una evaluación", "pueden evaluar",
+            "revisar mis permisos", "quiero que revisen", "necesito revisión", "sí, revisar"
+        ]):
+            return "cierre"
+
+        return "aclaracion_introduccion"
+
+    # ✅ ETAPA: cierre
+    elif etapa_actual in ["cierre", "aclaracion_cierre"]:
+        cita = extraer_fecha_y_hora(mensaje)
+        if cita and cita.get("fecha") and cita.get("hora"):
+            return "agradecimiento"
+        else:
+            return "aclaracion_cierre"  # ❗ No avanza hasta que se entienda
 
     # ✅ ETAPA: introducción
-    if etapa_actual in ["introduccion", "aclaracion_introduccion"]:
+    elif etapa_actual in ["introduccion", "aclaracion_introduccion"]:
         if any(p in mensaje for p in ["tengo", "sí tengo", "ya tengo", "cuenta con", "disponemos"]):
             return "permiso_si"
         elif any(p in mensaje for p in ["no tengo", "ninguno", "aún no", "todavía no", "sin permiso"]):
@@ -77,41 +109,7 @@ def determinar_siguiente_etapa(actividad, etapa_actual, mensaje):
             else:
                 return f"aclaracion_{etapa_actual}"
 
-    # ✅ ETAPA: cierre
-    elif etapa_actual in ["cierre", "aclaracion_cierre"]:
-        cita = extraer_fecha_y_hora(mensaje)
-        if cita and cita.get("fecha") and cita.get("hora"):
-            return "agradecimiento"
-        else:
-            return "aclaracion_cierre"  # ❗ No avanza hasta que se entienda
-
-    # ✅ ETAPA: agradecimiento (final)
-    elif etapa_actual == "agradecimiento":
-        if estado.get("fase") != "cita_registrada":
-            cita = extraer_fecha_y_hora(mensaje)
-            if cita and cita.get("fecha") and cita.get("hora"):
-                registrar_cita(chat_id, cita["fecha"], cita["hora"], cita.get("ubicacion"))
-                estado["fase"] = "cita_registrada"
-        respuesta = obtener_respuesta_por_actividad(estado["actividad"], "agradecimiento")
-
-
-    # 🌐 Flujo especial para "otros"
-    if actividad == "otros":
-        cita = extraer_fecha_y_hora(mensaje)
-        if cita and cita.get("fecha") and cita.get("hora"):
-            return "agradecimiento"
-    
-        if any(p in mensaje.lower() for p in [
-            "agendar", "programar", "calendarizar", "coordinar visita", "ponme una cita", "hazme la cita", "quiero agendar", "deseo agendar",
-            "necesito agendar", "quiero coordinar", "sí, agenda", "ya quiero agendar",
-            "visita", "visítenme", "visíteme", "me pueden visitar", "quiero que me visiten", "necesito que me visiten", "pueden venir",
-            "puede venir", "vengan", "venga por favor", "que vengan", "necesito visita", "me gustaría que vengan", "quiero reunión presencial",
-            "evaluación", "evaluar", "evaluación técnica", "revisión técnica", "revisar documentos", "quiero una evaluación", "pueden evaluar",
-            "revisar mis permisos", "quiero que revisen", "necesito revisión", "sí, revisar"
-        ]):
-            return "cierre"
-
-        return "aclaracion_introduccion"
+    return None  # Si no se cumple ninguna condición, devuelve None
 
 def esta_bloqueado(chat_id):
     ahora = time.time()
@@ -226,14 +224,16 @@ def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual):
             estado["fase"] = "cita_registrada"  # 🧠 Esto protege de nuevas sugerencias
             respuesta = obtener_respuesta_por_actividad(estado["actividad"], "agradecimiento")
         else:
-            respuesta = obtener_respuesta_por_actividad(estado["actividad"], etapa_actual)
-
+            # Si falta algún dato, pedirlo de nuevo
+            respuesta = obtener_respuesta_por_actividad(estado["actividad"], "aclaracion_cierre")
+            estado["etapa"] = "aclaracion_cierre"  # Mantener en aclaración hasta que se proporcione correctamente    
+    
     elif etapa_actual == "agradecimiento":
         respuesta = obtener_respuesta_por_actividad(estado["actividad"], "agradecimiento")
 
     else:
         respuesta = obtener_respuesta_por_actividad(estado["actividad"], etapa_actual)
-
+    
     # 🧠 Guardar estado y registrar mensaje
     estado["ultima_interaccion"] = fecha_actual.isoformat() if fecha_actual else datetime.now(ZONA_HORARIA_EC).isoformat()
     estado["chat_id"] = chat_id

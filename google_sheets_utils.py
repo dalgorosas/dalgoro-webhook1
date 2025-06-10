@@ -70,8 +70,8 @@ def conectar_hoja(nombre_hoja):
     # Reemplaza esta URL con la URL real de tu Google Sheet
     url_hoja = "https://docs.google.com/spreadsheets/d/1RggJz98tnR86fo_AspwLWUVOIABn6vVrvojAkfQAqHc/edit#gid=0"
 
-    hoja = cliente.open_by_url(url_hoja).worksheet(nombre_hoja)
-    return hoja
+    hoja_gspread = cliente.open_by_url(url_hoja).worksheet(nombre_hoja)
+    return hoja_gspread
 
 def cargar_estados_desde_sheets():
     hoja = conectar_hoja("Estado")
@@ -212,6 +212,14 @@ def registrar_cita_en_hoja(
     observaciones: cualquier nota adicional
     """
     hoja = conectar_hoja("Citas")
+    filas = hoja.get_all_records()
+
+    # Verificar si ya existe una cita para este contacto en la misma fecha y hora
+    for fila in filas:
+        if fila[0] == contacto and fila[1] == fecha_cita and fila[2] == hora:
+            print(f"⚠️ Ya existe una cita para {contacto} en {fecha_cita} a las {hora}. No se duplicará.")
+            return
+    
     fila = [
         contacto,
         fecha_cita,
@@ -221,7 +229,11 @@ def registrar_cita_en_hoja(
         "Pendiente",       # Confirmada por defecto
         observaciones
     ]
-    hoja.append_row(fila)
+    try:
+        hoja.append_row(fila)
+        print(f"➕ Cita registrada para {contacto} en {fecha_cita} a las {hora}.")
+    except Exception as e:
+        print(f"❌ Error al registrar cita en Google Sheets: {e}")
 
 def actualizar_estado_cita(contacto, nuevo_estado, observaciones_adicionales=""):
     """
