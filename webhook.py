@@ -121,28 +121,29 @@ def recibir():
         print(f"⏹️ Mensaje ya procesado anteriormente: {mensaje_id}")
         return jsonify({"status": "ya_procesado"}), 200
 
-    respuesta = manejar_conversacion(chat_id, mensaje, None, ultima_interaccion)
-    print(f"📤 Respuesta generada para {telefono}: {respuesta}")
+    try:
+        respuesta = manejar_conversacion(chat_id, mensaje, None, ultima_interaccion)
+        print(f"📤 Respuesta generada para {telefono}: {respuesta}")
+    except Exception as e:
+        print(f"❌ Error al manejar conversación con {telefono}: {e}")
+        respuesta = None
+        
+    # ✅ Marcar como procesado aunque haya error para evitar reenvíos infinitos
+    registrar_mensaje_procesado(chat_id, mensaje_id)
 
     if not respuesta:
         logger.warning(f"⚠️ No se generó respuesta para {telefono}.")
         sheets_manager.log_message(telefono, "Sin respuesta generada", "Advertencia", "Bot")
         return jsonify({"status": "sin_respuesta"}), 200
 
-    if respuesta and len(respuesta) > 1000:
+    if len(respuesta) > 1000:
         respuesta = respuesta[:997] + "..."
 
-    if not respuesta:
-        logger.warning(f"⚠️ No se generó respuesta para {telefono}.")
-        return jsonify({"status": "sin_respuesta"}), 200
-
-    # Registrar y enviar la respuesta
+    # ✅ Enviar la respuesta
     resultado_envio = enviar_mensaje(telefono, respuesta)
     if resultado_envio is None:
         logger.warning(f"❌ Falló el envío a {telefono}. Respuesta: {respuesta}")
-        # Opcional: registrar en Google Sheets el fallo
     else:
-        registrar_mensaje_procesado(chat_id, mensaje_id)
         sheets_manager.log_message(telefono, respuesta, "Enviado", "Bot")
 
     return jsonify({"status": "ok"}), 200
