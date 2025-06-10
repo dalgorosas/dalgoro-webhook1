@@ -194,14 +194,7 @@ def registrar_mensaje(chat_id, mensaje, tipo, canal):
         mensaje     # Mensaje
     ])
 
-def registrar_cita_en_hoja(
-    contacto: str,
-    fecha_cita: str,
-    hora: str,
-    modalidad: str,
-    lugar: str,
-    observaciones: str = ""
-):
+def registrar_cita_en_hoja(contacto, fecha_cita, hora, modalidad, lugar, observaciones):
     """
     Registra una nueva cita en la hoja 'Citas' del Google Sheets.
     contacto: número del cliente (593...)
@@ -216,21 +209,20 @@ def registrar_cita_en_hoja(
 
     # Verificar si ya existe una cita para este contacto en la misma fecha y hora
     for fila in filas:
-        if fila[0] == contacto and fila[1] == fecha_cita and fila[2] == hora:
+        if fila["ID_Contacto"] == contacto and fila["Fecha_Cita"] == fecha_cita and fila["Hora"] == hora:
             print(f"⚠️ Ya existe una cita para {contacto} en {fecha_cita} a las {hora}. No se duplicará.")
             return
     
-    fila = [
+    nueva_fila = [
         contacto,
         fecha_cita,
         hora,
         modalidad,
         lugar,
-        "Pendiente",       # Confirmada por defecto
         observaciones
     ]
     try:
-        hoja.append_row(fila)
+        hoja.append_row(nueva_fila)
         print(f"➕ Cita registrada para {contacto} en {fecha_cita} a las {hora}.")
     except Exception as e:
         print(f"❌ Error al registrar cita en Google Sheets: {e}")
