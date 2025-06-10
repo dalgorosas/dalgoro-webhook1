@@ -50,7 +50,18 @@ def determinar_siguiente_etapa(actividad, etapa, mensaje, estado, chat_id):
         if estado.get("fase") != "cita_registrada":
             cita = extraer_fecha_y_hora(mensaje)
             if cita and cita.get("fecha") and cita.get("hora"):
-                registrar_cita(chat_id, cita["fecha"], cita["hora"], cita.get("ubicacion"))
+                ubicacion = cita.get("ubicacion", "")
+                modalidad = "Oficina" if "oficina" in ubicacion.lower() else "Finca"
+
+                registrar_cita_en_hoja(
+                    contacto=chat_id,
+                    fecha_cita=cita["fecha"],
+                    hora=cita["hora"],
+                    modalidad=modalidad,
+                    lugar=ubicacion,
+                    observaciones=""
+                )
+                                       
                 estado["fase"] = "cita_registrada"
         respuesta = obtener_respuesta_por_actividad(estado["actividad"], "agradecimiento")
 
@@ -227,7 +238,18 @@ def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual):
             return None
 
         if cita and cita.get("fecha") and cita.get("hora"):
-            registrar_cita(chat_id, cita["fecha"], cita["hora"], cita.get("ubicacion"))
+            ubicacion = cita.get("ubicacion", "")
+            modalidad = "Oficina" if "oficina" in ubicacion.lower() else "Finca"
+
+            registrar_cita_en_hoja(
+                contacto=chat_id,
+                fecha_cita=cita["fecha"],
+                hora=cita["hora"],
+                modalidad=modalidad,
+                lugar=ubicacion,
+                observaciones=""
+            )          
+            
             estado["etapa"] = "agradecimiento"
             estado["fase"] = "cita_registrada"  # 🧠 Esto protege de nuevas sugerencias
             respuesta = obtener_respuesta_por_actividad(estado["actividad"], "agradecimiento")
