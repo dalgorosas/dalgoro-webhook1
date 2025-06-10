@@ -232,7 +232,7 @@ def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual):
         estado["etapa"] = "introduccion"
 
     # ✅ Control seguro de registro de cita: solo si ya estamos en etapa de cierre
-    if etapa == "cierre":
+    if etapa in ["cierre", "aclaracion_cierre"]:
         cita = extraer_fecha_y_hora(mensaje)
 
         if estado.get("fase") == "cita_registrada":
