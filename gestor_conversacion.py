@@ -221,6 +221,8 @@ def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual):
             nueva_etapa = determinar_siguiente_etapa(estado["actividad"], estado.get("etapa"), mensaje, estado, chat_id)
             if nueva_etapa:
                 estado["etapa"] = nueva_etapa
+                etapa = estado["etapa"]  # ACTUALIZA la variable local etapa
+
         except Exception as e:
             print(f"❌ Error al determinar siguiente etapa para {chat_id}: {e}")
 
