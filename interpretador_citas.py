@@ -18,12 +18,14 @@ patrones_hora_ext = [
 ]
 
 patrones_fecha_ext = [
-    r"\b(hoy|mañana|pasado\s+mañana)\b",
+    r"\b(hoy|mañana|pasado\s+mañana|esta\s+semana|esta\s+noche|esta\s+mañana|esta\s+tarde)\b",
     r"\b(\d{1,2})[/-](\d{1,2})[/-](\d{2,4})\b",
     r"\b(\d{1,2})[/-](\d{1,2})\b",
     r"\b(el\s+)?(\d{1,2})\s+de\s+(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)\b",
     r"\b(lunes|martes|miércoles|miercoles|jueves|viernes|sábado|sabado|domingo)\b",
-    r"\b(próximo|proximo)\s+(lunes|martes|miércoles|miercoles|jueves|viernes|sábado|sabado|domingo)\b"
+    r"\b(próximo|proximo)\s+(lunes|martes|miércoles|miercoles|jueves|viernes|sábado|sabado|domingo)\b",
+    r"\b(dentro\s+de\s+\d+\s+(días|semanas))\b",
+    r"\b(en\s+una\s+semana|en\s+dos\s+días)\b"
 ]
 
 # 🧠 Normalización de expresiones informales
@@ -41,7 +43,17 @@ def normalizar_expresiones_comunes(texto):
         "al amanecer": "a las 06:00",
         "al anochecer": "a las 18:00",
         "después del almuerzo": "a las 14:00",
-        "temprano en la mañana": "a las 08:00"
+        "temprano en la mañana": "a las 08:00",
+        "esta noche": "hoy a las 20:00",
+        "esta mañana": "hoy a las 08:00",
+        "esta tarde": "hoy a las 15:00",
+        "en la madrugada": "hoy a las 05:00",
+        "en la noche": "hoy a las 20:00",
+        "en la tarde": "hoy a las 15:00",
+        "en la mañana": "hoy a las 09:00",
+        "después del almuerzo": "hoy a las 14:00",
+        "a primera hora": "hoy a las 07:00",
+        "en dos días": "pasado mañana"
     }
 
     texto_normalizado = texto.lower()
