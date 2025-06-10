@@ -91,21 +91,28 @@ def determinar_siguiente_etapa(actividad, etapa, mensaje, estado, chat_id):
 
     # ✅ ETAPA: permiso otorgado o no
     elif etapa in ["permiso_si", "permiso_no", "aclaracion_permiso_si", "aclaracion_permiso_no"]:
-        if any(p in mensaje for p in ["sí", "si", "claro", "por supuesto", "afirmativo", "de acuerdo", "ok", "vale", "está bien", "listo", "seguro", "acepto", "confirmo",
-            "quiero", "me interesa", "me gustaría", "deseo", "necesito", "prefiero", "sí deseo", "sí quiero", "sí necesito", "sí me interesa",
-            "agendar", "coordinemos", "calendarizar", "programar", "ponme una cita", "hazme la cita", "coordinemos visita",
-            "pueden venir", "puede venir", "vengan por favor", "quiero que vengan", "agenden visita", "sí, visítenme", "pueden ir",
-            "sii", "siii", "quieroo", "quiero agendar", "quiero cita", "si quiero", "si deseo", "si vienen"]):
+        positivos = [
+            "sí", "si", "claro", "por supuesto", "afirmativo", "de acuerdo", "ok", "vale", "está bien", "listo",
+            "seguro", "acepto", "confirmo", "quiero", "me interesa", "me gustaría", "deseo", "necesito", "prefiero",
+            "sí deseo", "sí quiero", "sí necesito", "sí me interesa", "quiero agendar", "coordinemos", "calendarizar",
+            "programar", "hazme la cita", "coordinemos visita", "pueden venir", "puede venir", "vengan por favor", 
+            "quiero que vengan", "agenden visita", "sí, visítenme", "pueden ir", "sii", "siii", "quieroo", "quiero cita",
+            "si quiero", "si deseo", "si vienen"
+        ]
+        negativos = [
+            "no", "nop", "negativo", "ni de broma", "jamás", "nunca", "para nada", "no quiero", "no deseo", 
+            "no necesito", "no me interesa", "no por ahora", "no todavía", "todavía", "aún", "aun no", 
+            "no he decidido", "más adelante", "quizá después", "no en este momento", "otro día", 
+            "déjame pensarlo", "necesito pensarlo", "no estoy seguro", "no tengo tiempo"
+        ]
+
+        if any(p in mensaje.lower() for p in positivos):
             return "cierre"
-        elif any(p in mensaje for p in ["no", "nop", "negativo", "ni de broma", "jamás", "nunca", "para nada", "no quiero", "no deseo", "no necesito",
-            "no me interesa", "no por ahora", "no todavía", "todavía", "aún", "aun no", "no he decidido", "más adelante",
-            "quizá después", "no en este momento", "no por el momento", "otro día", "en otra ocasión", "después",
-            "ahorita no", "déjame pensarlo", "necesito pensarlo", "no estoy seguro", "no estoy lista", "no tengo tiempo"]):
-            return etapa  # ❗ Cliente no está listo, mantenemos etapa
+        elif any(p in mensaje.lower() for p in negativos):
+            return etapa
         else:
-            # Devuelve aclaración específica de esta etapa
             if etapa.startswith("aclaracion_"):
-                return etapa  # Ya está en aclaración, no repetir
+                return etapa
             else:
                 return f"aclaracion_{etapa}"
 
