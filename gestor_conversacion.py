@@ -44,9 +44,9 @@ def formatear_respuesta(respuesta):
         return "\n".join(respuesta)
     return str(respuesta)
 
-def determinar_siguiente_etapa(actividad, etapa_actual, mensaje, estado, chat_id):
+def determinar_siguiente_etapa(actividad, etapa, mensaje, estado, chat_id):
     # ✅ ETAPA: agradecimiento (final)
-    if etapa_actual == "agradecimiento":
+    if etapa == "agradecimiento":
         if estado.get("fase") != "cita_registrada":
             cita = extraer_fecha_y_hora(mensaje)
             if cita and cita.get("fecha") and cita.get("hora"):
@@ -73,7 +73,7 @@ def determinar_siguiente_etapa(actividad, etapa_actual, mensaje, estado, chat_id
         return "aclaracion_introduccion"
 
     # ✅ ETAPA: cierre
-    elif etapa_actual in ["cierre", "aclaracion_cierre"]:
+    elif etapa in ["cierre", "aclaracion_cierre"]:
         cita = extraer_fecha_y_hora(mensaje)
         if cita and cita.get("fecha") and cita.get("hora"):
             return "agradecimiento"
@@ -81,7 +81,7 @@ def determinar_siguiente_etapa(actividad, etapa_actual, mensaje, estado, chat_id
             return "aclaracion_cierre"  # ❗ No avanza hasta que se entienda
 
     # ✅ ETAPA: introducción
-    elif etapa_actual in ["introduccion", "aclaracion_introduccion"]:
+    elif etapa in ["introduccion", "aclaracion_introduccion"]:
         if any(p in mensaje for p in ["tengo", "sí tengo", "ya tengo", "cuenta con", "disponemos"]):
             return "permiso_si"
         elif any(p in mensaje for p in ["no tengo", "ninguno", "aún no", "todavía no", "sin permiso"]):
@@ -90,7 +90,7 @@ def determinar_siguiente_etapa(actividad, etapa_actual, mensaje, estado, chat_id
             return "aclaracion_introduccion"  # ❗ No cambia etapa, se mantiene
 
     # ✅ ETAPA: permiso otorgado o no
-    elif etapa_actual in ["permiso_si", "permiso_no", "aclaracion_permiso_si", "aclaracion_permiso_no"]:
+    elif etapa in ["permiso_si", "permiso_no", "aclaracion_permiso_si", "aclaracion_permiso_no"]:
         if any(p in mensaje for p in ["sí", "si", "claro", "por supuesto", "afirmativo", "de acuerdo", "ok", "vale", "está bien", "listo", "seguro", "acepto", "confirmo",
             "quiero", "me interesa", "me gustaría", "deseo", "necesito", "prefiero", "sí deseo", "sí quiero", "sí necesito", "sí me interesa",
             "agendar", "coordinemos", "calendarizar", "programar", "ponme una cita", "hazme la cita", "coordinemos visita",
@@ -101,13 +101,13 @@ def determinar_siguiente_etapa(actividad, etapa_actual, mensaje, estado, chat_id
             "no me interesa", "no por ahora", "no todavía", "todavía", "aún", "aun no", "no he decidido", "más adelante",
             "quizá después", "no en este momento", "no por el momento", "otro día", "en otra ocasión", "después",
             "ahorita no", "déjame pensarlo", "necesito pensarlo", "no estoy seguro", "no estoy lista", "no tengo tiempo"]):
-            return etapa_actual  # ❗ Cliente no está listo, mantenemos etapa
+            return etapa  # ❗ Cliente no está listo, mantenemos etapa
         else:
             # Devuelve aclaración específica de esta etapa
-            if etapa_actual.startswith("aclaracion_"):
-                return etapa_actual  # Ya está en aclaración, no repetir
+            if etapa.startswith("aclaracion_"):
+                return etapa  # Ya está en aclaración, no repetir
             else:
-                return f"aclaracion_{etapa_actual}"
+                return f"aclaracion_{etapa}"
 
     return None  # Si no se cumple ninguna condición, devuelve None
 
@@ -124,7 +124,7 @@ def bloquear_chat(chat_id, segundos=1.5):
 def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual): 
     estado = obtener_estado_seguro(chat_id)
     es_primera_interaccion = not estado.get("actividad") and not estado.get("etapa") and not estado.get("ultima_interaccion")
-    etapa_actual = estado.get("etapa")
+    etapa = estado.get("etapa")
     fase_actual = estado.get("fase", "inicio")
 
     # ⚠️ Iniciar con mensaje inicial si el estado está vacío y no está esperando actividad
@@ -207,12 +207,12 @@ def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual):
             print(f"❌ Error al determinar siguiente etapa para {chat_id}: {e}")
 
     # 🔐 Protección: si la etapa está vacía, forzar etapa segura
-    if not etapa_actual:
-        etapa_actual = "introduccion"
+    if not etapa:
+        etapa = "introduccion"
         estado["etapa"] = "introduccion"
 
     # ✅ Control seguro de registro de cita: solo si ya estamos en etapa de cierre
-    if etapa_actual == "cierre":
+    if etapa == "cierre":
         cita = extraer_fecha_y_hora(mensaje)
 
         if estado.get("fase") == "cita_registrada":
@@ -229,11 +229,11 @@ def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual):
             respuesta = obtener_respuesta_por_actividad(estado["actividad"], "aclaracion_cierre")
             estado["etapa"] = "aclaracion_cierre"  # Mantener en aclaración hasta que se proporcione correctamente    
     
-    elif etapa_actual == "agradecimiento":
+    elif etapa == "agradecimiento":
         respuesta = obtener_respuesta_por_actividad(estado["actividad"], "agradecimiento")
 
     else:
-        respuesta = obtener_respuesta_por_actividad(estado["actividad"], etapa_actual)
+        respuesta = obtener_respuesta_por_actividad(estado["actividad"], etapa)
     
     # 🧠 Guardar estado y registrar mensaje
     estado["ultima_interaccion"] = fecha_actual.isoformat() if fecha_actual else datetime.now(ZONA_HORARIA_EC).isoformat()
