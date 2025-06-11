@@ -200,14 +200,21 @@ def registrar_cita_en_hoja(contacto, fecha_cita, hora, modalidad, lugar, observa
         hoja = conectar_hoja("Citas")
         filas = hoja.get_all_records()
 
+        # Verificar duplicados solo si la hoja tiene datos válidos
         for fila in filas:
-            if fila["ID_Contacto"] == contacto and fila["Fecha_Cita"] == fecha_cita and fila["Hora"] == hora:
+            id_c = str(fila.get("ID_Contacto", "")).strip()
+            fecha = str(fila.get("Fecha_Cita", "")).strip()
+            hora_fila = str(fila.get("Hora", "")).strip()
+
+            if id_c == contacto and fecha == fecha_cita and hora_fila == hora:
                 print(f"⚠️ Ya existe una cita para {contacto} en {fecha_cita} a las {hora}.")
                 return
 
         nueva_fila = [contacto, fecha_cita, hora, modalidad, lugar, observaciones]
+        print("📝 Registrando nueva fila:", nueva_fila)
         hoja.append_row(nueva_fila)
-        print(f"➕ Cita registrada correctamente.")
+        print(f"✅ Cita registrada para {contacto} en {fecha_cita} a las {hora}.")
+
     except Exception as e:
         print(f"❌ Error al registrar cita en Google Sheets: {e}")
 
