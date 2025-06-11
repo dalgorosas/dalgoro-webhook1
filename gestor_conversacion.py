@@ -231,7 +231,7 @@ def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual):
         etapa = "introduccion"
         estado["etapa"] = "introduccion"
 
-    # ✅ Control seguro de registro de cita: solo si ya estamos en etapa de cierre
+    # ✅ Control seguro de registro de cita: aceptar si está en etapa de cierre o aclaración de cierre
     if etapa in ["cierre", "aclaracion_cierre"]:
         cita = extraer_fecha_y_hora(mensaje)
 
@@ -243,6 +243,8 @@ def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual):
             ubicacion = cita.get("ubicacion", "")
             modalidad = "Oficina" if "oficina" in ubicacion.lower() else "Finca"
 
+            print(f"📝 Registrando cita para {chat_id}: {cita['fecha']} a las {cita['hora']} en {ubicacion} ({modalidad})")
+
             registrar_cita_en_hoja(
                 contacto=chat_id,
                 fecha_cita=cita["fecha"],
@@ -251,14 +253,13 @@ def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual):
                 lugar=ubicacion,
                 observaciones=""
             )          
-            
+        
             estado["etapa"] = "agradecimiento"
             estado["fase"] = "cita_registrada"  # 🧠 Esto protege de nuevas sugerencias
             respuesta = obtener_respuesta_por_actividad(estado["actividad"], "agradecimiento")
         else:
-            # Si falta algún dato, pedirlo de nuevo
             respuesta = obtener_respuesta_por_actividad(estado["actividad"], "aclaracion_cierre")
-            estado["etapa"] = "aclaracion_cierre"  # Mantener en aclaración hasta que se proporcione correctamente    
+            estado["etapa"] = "aclaracion_cierre"
     
     elif etapa == "agradecimiento":
         respuesta = obtener_respuesta_por_actividad(estado["actividad"], "agradecimiento")
