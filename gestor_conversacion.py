@@ -262,12 +262,8 @@ def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual):
                 print(f"🔁 Ya se registró una cita antes para {chat_id}, evitando duplicado.")
                 return None
 
-            if not cita:
-                print(f"⚠️ No se pudo detectar cita completa. Solicitar aclaración.")
-                estado["etapa"] = "aclaracion_cierre"
-                respuesta = obtener_respuesta_por_actividad(estado["actividad"], "aclaracion_cierre")
-            elif not cita.get("fecha") or not cita.get("hora"):
-                print(f"⚠️ Cita detectada parcialmente. Faltan datos.")
+            if not cita or not cita.get("fecha") or not cita.get("hora"):
+                print(f"⚠️ No se pudo detectar cita completa o faltan datos. Solicitar aclaración.")
                 estado["etapa"] = "aclaracion_cierre"
                 respuesta = obtener_respuesta_por_actividad(estado["actividad"], "aclaracion_cierre")
             else:
@@ -275,20 +271,17 @@ def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual):
                 modalidad = "Oficina" if "oficina" in ubicacion.lower() else "Finca"
 
                 print(f"📝 Registrando cita para {chat_id}: {cita['fecha']} a las {cita['hora']} en {ubicacion} ({modalidad})")
-                registrar_cita_en_hoja(
-                    contacto=chat_id,
-                    fecha_cita=cita["fecha"],
+
+                registrar_cita(
+                    chat_id=chat_id,
+                    fecha=cita["fecha"],
                     hora=cita["hora"],
-                    modalidad=modalidad,
-                    lugar=ubicacion,
-                    observaciones=""
-                )          
+                    ubicacion=ubicacion
+                )
 
                 estado["etapa"] = "agradecimiento"
                 estado["fase"] = "cita_registrada"
                 respuesta = obtener_respuesta_por_actividad(estado["actividad"], "agradecimiento")
-
-            print(f"📝 Registrando cita para {chat_id}: {cita['fecha']} a las {cita['hora']} en {ubicacion} ({modalidad})")
 
             registrar_cita_en_hoja(
                 contacto=chat_id,
