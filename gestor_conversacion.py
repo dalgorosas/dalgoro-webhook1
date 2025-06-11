@@ -205,15 +205,10 @@ def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual):
         print(f"❌ Mensaje duplicado detectado para {chat_id}. Activando bloqueo.")
         return None
 
-    if actividad is None and estado.get("actividad"):
-        actividad = estado["actividad"]
-
-    if actividad:
-        if estado.get("actividad") != actividad:
-            estado["actividad"] = actividad
-            estado["etapa"] = "introduccion"
-        elif not estado.get("etapa"):
-            estado["etapa"] = "introduccion"
+    actividad = actividad or estado.get("actividad")
+    if actividad and not estado.get("etapa"):
+        estado["etapa"] = "introduccion"
+        etapa = "introduccion"
 
     # ⛔ Evitar que se reemplace la etapa si ya estamos en agradecimiento
     if estado.get("etapa") != "agradecimiento":
@@ -225,14 +220,10 @@ def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual):
 
         except Exception as e:
             print(f"❌ Error al determinar siguiente etapa para {chat_id}: {e}")
-
-    # 🔐 Protección: si la etapa está vacía, forzar etapa segura
-    if not etapa:
-        etapa = "introduccion"
-        estado["etapa"] = "introduccion"
-
+    
     # ✅ Control seguro de registro de cita: aceptar si está en etapa de cierre o aclaración de cierre
     if etapa in ["cierre", "aclaracion_cierre"]:
+        print(f"🎯 Entrando a etapa de registro de cita. Estado actual: {estado}")
         cita = extraer_fecha_y_hora(mensaje)
 
         if estado.get("fase") == "cita_registrada":
@@ -260,7 +251,7 @@ def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual):
         else:
             respuesta = obtener_respuesta_por_actividad(estado["actividad"], "aclaracion_cierre")
             estado["etapa"] = "aclaracion_cierre"
-    
+      
     elif etapa == "agradecimiento":
         respuesta = obtener_respuesta_por_actividad(estado["actividad"], "agradecimiento")
 
