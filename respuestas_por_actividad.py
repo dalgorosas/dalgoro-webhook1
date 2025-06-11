@@ -6,6 +6,15 @@ Cuéntenos por favor, ¿su consulta está relacionada con alguna de estas activi
 Bananera, camaronera, minería, cacaotera, cultivo de ciclo corto, granja porcina, granja avícola, hotel, industria u otra.
 """
 
+# Lista centralizada de frases que indican desinterés fuerte o rechazo
+NEGATIVOS_FUERTES = [
+    "no", "no quiero", "no deseo", "no me interesa", "más adelante",
+    "ahora no", "otro día", "quizá después", "no estoy seguro",
+    "no por ahora", "no todavía", "todavía", "aún", "aun no", 
+    "no he decidido", "otro momento", "déjame pensarlo", 
+    "necesito pensarlo", "no tengo tiempo"
+]
+
 FLUJOS_POR_ACTIVIDAD = {
     "bananera": {
         "introduccion": "🍌 ¡Excelente actividad! Justamente nosotros nos especializamos en el sector bananero para facilitar el cumplimiento ambiental y evitar sanciones. ¿Podría indicarnos si ya cuenta con un permiso ambiental como registro o licencia?\n\n👉 Ya tengo permiso\n👉 Aún no tengo ninguno",
@@ -213,3 +222,10 @@ def detectar_actividad(texto):
 
     # Si no hay coincidencia ni suficiente información
     return None
+
+for actividad in FLUJOS_POR_ACTIVIDAD:
+    FLUJOS_POR_ACTIVIDAD[actividad]["salida_amable"] = (
+        "👌 Entiendo perfectamente. Si más adelante desea nuestra ayuda ambiental, estaremos disponibles por este medio. "
+        "Gracias por habernos escrito 🌱"
+    )
+

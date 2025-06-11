@@ -3,6 +3,9 @@ from dateutil import parser
 import re
 import pytz
 from dateparser.search import search_dates
+from lexico import EXPRESIONES_TIEMPO, EXPRESIONES_UBICACION
+from lexico import EXPRESIONES_UBICACION
+
 
 # ✅ ZONA HORARIA DE ECUADOR
 ZONA_HORARIA_EC = pytz.timezone("America/Guayaquil")
@@ -65,6 +68,16 @@ def normalizar_expresiones_comunes(texto):
 # 🎯 Función principal
 def extraer_fecha_y_hora(texto):
     texto = normalizar_expresiones_comunes(texto)
+        # Segundo intento: buscar ubicaciones y expresiones de tiempo manuales
+    for expr in EXPRESIONES_TIEMPO:
+        if expr.lower() in texto:
+            texto += f" {EXPRESIONES_TIEMPO[expr]}"
+            break
+
+    for expr in EXPRESIONES_UBICACION:
+        if expr.lower() in texto:
+            ubicacion = EXPRESIONES_UBICACION[expr]
+            break
 
     # Primer intento con dateparser
     fecha_hora = search_dates(
@@ -82,11 +95,17 @@ def extraer_fecha_y_hora(texto):
         fecha_detectada = fecha_hora[0][1].astimezone(ZONA_HORARIA_EC)
     
         ubicacion = None
-        if "finca" in texto:
-            ubicacion = "Finca"
-        elif "oficina" in texto:
-            ubicacion = "Oficina"
-    
+        for expresion in EXPRESIONES_UBICACION:
+            if expresion in texto:
+                if "finca" in expresion:
+                    ubicacion = "Finca"
+                elif "oficina" in expresion:
+                    ubicacion = "Oficina"
+                else:
+                    ubicacion = "Sitio"
+                break
+            print(f"🧭 Ubicación detectada: {ubicacion}")
+
         return {
             "fecha": fecha_detectada.strftime("%Y-%m-%d"),
             "hora": fecha_detectada.strftime("%H:%M"),

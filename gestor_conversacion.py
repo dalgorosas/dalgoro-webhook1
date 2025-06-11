@@ -13,7 +13,7 @@ from google_sheets_utils import guardar_estado_en_sheets
 from control_antirrepeticion import mensaje_duplicado, registrar_mensaje, bloqueo_activo, activar_bloqueo
 from google_sheets_utils import registrar_cita_en_hoja
 from respuestas_por_actividad import detectar_actividad, obtener_respuesta_por_actividad, RESPUESTA_INICIAL
-
+from respuestas_por_actividad import NEGATIVOS_FUERTES
 
 ZONA_HORARIA_EC = timezone(timedelta(hours=-5))
 
@@ -36,6 +36,21 @@ def registrar_cita(chat_id, fecha, hora, ubicacion=None):
         lugar=ubicacion_segura or "No especificado",
         observaciones=""
     )
+    # ✅ Notificar al número personal del Ing. Darwin
+    from bot import enviar_mensaje  # Asegúrate que esta importación está activa arriba
+
+    numero_personal = "593984770663@c.us"  # Reemplaza con tu número real
+
+    mensaje_interno = (
+        f"📢 *Nueva cita registrada:*\n"
+        f"📅 *Fecha:* {fecha}\n"
+        f"🕒 *Hora:* {hora}\n"
+        f"📍 *Lugar:* {ubicacion_segura or 'No especificado'}\n"
+        f"📞 *Cliente:* {chat_id.replace('@c.us', '')}\n"
+        f"✉️ Mensaje automático para coordinación inmediata."
+    )
+
+    enviar_mensaje(numero_personal, mensaje_interno)
 
 def formatear_respuesta(respuesta):
     if isinstance(respuesta, str):
@@ -45,25 +60,13 @@ def formatear_respuesta(respuesta):
     return str(respuesta)
 
 def determinar_siguiente_etapa(actividad, etapa, mensaje, estado, chat_id):
-    # ✅ ETAPA: agradecimiento (final)
-    if etapa == "agradecimiento":
-        if estado.get("fase") != "cita_registrada":
-            cita = extraer_fecha_y_hora(mensaje)
-            if cita and cita.get("fecha") and cita.get("hora"):
-                ubicacion = cita.get("ubicacion", "")
-                modalidad = "Oficina" if "oficina" in ubicacion.lower() else "Finca"
+    # 🚧 Refuerzo de lógica: no saltar etapas sin pasar por las anteriores
+    secuencia_etapas = ["introduccion", "permiso_si", "permiso_no", "cierre", "agradecimiento"]
+    etapa_actual = etapa or "introduccion"
 
-                registrar_cita_en_hoja(
-                    contacto=chat_id,
-                    fecha_cita=cita["fecha"],
-                    hora=cita["hora"],
-                    modalidad=modalidad,
-                    lugar=ubicacion,
-                    observaciones=""
-                )
-                                       
-                estado["fase"] = "cita_registrada"
-        respuesta = obtener_respuesta_por_actividad(estado["actividad"], "agradecimiento")
+    # Si se detecta una etapa fuera de secuencia, forzar el retorno a la etapa actual
+    if etapa_actual not in secuencia_etapas:
+        return "introduccion"
 
     # 🌐 Flujo especial para "otros"
     elif actividad == "otros":
@@ -91,14 +94,27 @@ def determinar_siguiente_etapa(actividad, etapa, mensaje, estado, chat_id):
         else:
             return "aclaracion_cierre"  # ❗ No avanza hasta que se entienda
 
-    # ✅ ETAPA: introducción
     elif etapa in ["introduccion", "aclaracion_introduccion"]:
-        if any(p in mensaje for p in ["tengo", "sí tengo", "ya tengo", "cuenta con", "disponemos"]):
-            return "permiso_si"
-        elif any(p in mensaje for p in ["no tengo", "ninguno", "aún no", "todavía no", "sin permiso"]):
+        mensaje_limpio = mensaje.lower()
+
+        negativos_permiso = [
+            "no tengo", "ninguno", "aún no", "todavía no", "sin permiso", 
+            "no contamos", "no dispongo", "aún estamos esperando", "no nos han dado", 
+            "no lo hemos tramitado", "falta tramitar"
+        ]
+
+        positivos_permiso = [
+            "tengo", "sí tengo", "ya tengo", "cuenta con", "disponemos",
+            "ya contamos", "ya nos otorgaron", "nos aprobaron", "lo tenemos", 
+            "ya nos dieron", "está vigente"
+        ]
+
+        if any(p in mensaje_limpio for p in negativos_permiso):
             return "permiso_no"
+        elif any(p in mensaje_limpio for p in positivos_permiso):
+            return "permiso_si"
         else:
-            return "aclaracion_introduccion"  # ❗ No cambia etapa, se mantiene
+            return "aclaracion_introduccion"
 
     # ✅ ETAPA: permiso otorgado o no
     elif etapa in ["permiso_si", "permiso_no", "aclaracion_permiso_si", "aclaracion_permiso_no"]:
@@ -141,6 +157,18 @@ def bloquear_chat(chat_id, segundos=1.5):
 
 def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual): 
     estado = obtener_estado_seguro(chat_id)
+    # 🚫 Detección anticipada de desinterés o negativa persistente
+    if any(p in mensaje.lower() for p in NEGATIVOS_FUERTES):
+        estado["intentos_negativos"] = estado.get("intentos_negativos", 0) + 1
+        print(f"🚫 Cliente respondió con frase negativa. Intentos: {estado['intentos_negativos']}")
+        if estado["intentos_negativos"] >= 2:
+            estado["fase"] = "cerrado_amablemente"
+            estado["ultima_interaccion"] = fecha_actual.isoformat() if fecha_actual else datetime.now(ZONA_HORARIA_EC).isoformat()
+            guardar_estado(chat_id, estado)
+            registrar_mensaje(chat_id, mensaje)
+            return obtener_respuesta_por_actividad(estado.get("actividad", "otros"), "salida_amable")
+    else:
+        estado["intentos_negativos"] = 0  # Reinicia si hay otra intención
     es_primera_interaccion = not estado.get("actividad") and not estado.get("etapa") and not estado.get("ultima_interaccion")
     etapa = estado.get("etapa")
     fase_actual = estado.get("fase", "inicio")
@@ -210,6 +238,10 @@ def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual):
         estado["etapa"] = "introduccion"
         etapa = "introduccion"
 
+    if estado.get("fase") == "cerrado_amablemente":
+        print(f"🚫 Cliente ya mostró desinterés. No se continuará conversación.")
+        return obtener_respuesta_por_actividad(estado["actividad"], "salida_amable")
+
     # ⛔ Evitar que se reemplace la etapa si ya estamos en agradecimiento
     if estado.get("etapa") != "agradecimiento":
         try:
@@ -222,17 +254,39 @@ def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual):
             print(f"❌ Error al determinar siguiente etapa para {chat_id}: {e}")
     
     # ✅ Control seguro de registro de cita: aceptar si está en etapa de cierre o aclaración de cierre
-    if etapa in ["cierre", "aclaracion_cierre"]:
-        print(f"🎯 Entrando a etapa de registro de cita. Estado actual: {estado}")
-        cita = extraer_fecha_y_hora(mensaje)
+        if etapa in ["cierre", "aclaracion_cierre"]:
+            print(f"🎯 Entrando a etapa de registro de cita. Estado actual: {estado}")
+            cita = extraer_fecha_y_hora(mensaje)
 
-        if estado.get("fase") == "cita_registrada":
-            print(f"🔁 Ya se registró una cita antes para {chat_id}, evitando duplicado.")
-            return None
+            if estado.get("fase") == "cita_registrada":
+                print(f"🔁 Ya se registró una cita antes para {chat_id}, evitando duplicado.")
+                return None
 
-        if cita and cita.get("fecha") and cita.get("hora"):
-            ubicacion = cita.get("ubicacion", "")
-            modalidad = "Oficina" if "oficina" in ubicacion.lower() else "Finca"
+            if not cita:
+                print(f"⚠️ No se pudo detectar cita completa. Solicitar aclaración.")
+                estado["etapa"] = "aclaracion_cierre"
+                respuesta = obtener_respuesta_por_actividad(estado["actividad"], "aclaracion_cierre")
+            elif not cita.get("fecha") or not cita.get("hora"):
+                print(f"⚠️ Cita detectada parcialmente. Faltan datos.")
+                estado["etapa"] = "aclaracion_cierre"
+                respuesta = obtener_respuesta_por_actividad(estado["actividad"], "aclaracion_cierre")
+            else:
+                ubicacion = cita.get("ubicacion", "") or "No especificado"
+                modalidad = "Oficina" if "oficina" in ubicacion.lower() else "Finca"
+
+                print(f"📝 Registrando cita para {chat_id}: {cita['fecha']} a las {cita['hora']} en {ubicacion} ({modalidad})")
+                registrar_cita_en_hoja(
+                    contacto=chat_id,
+                    fecha_cita=cita["fecha"],
+                    hora=cita["hora"],
+                    modalidad=modalidad,
+                    lugar=ubicacion,
+                    observaciones=""
+                )          
+
+                estado["etapa"] = "agradecimiento"
+                estado["fase"] = "cita_registrada"
+                respuesta = obtener_respuesta_por_actividad(estado["actividad"], "agradecimiento")
 
             print(f"📝 Registrando cita para {chat_id}: {cita['fecha']} a las {cita['hora']} en {ubicacion} ({modalidad})")
 
