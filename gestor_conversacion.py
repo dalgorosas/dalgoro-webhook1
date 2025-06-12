@@ -96,6 +96,8 @@ def determinar_siguiente_etapa(estado_actual, mensaje):
     elif etapa == "aclaracion_permiso_si":
         if contiene_permiso_si(mensaje):
             return "permiso_si", "confirmado"
+        elif "agenda" in mensaje.lower() or "visita" in mensaje.lower() or "quiero" in mensaje.lower():
+            return "cierre", "esperando_cita"
         else:
             return "aclaracion_permiso_si", "esperando_cita"
 
@@ -108,6 +110,8 @@ def determinar_siguiente_etapa(estado_actual, mensaje):
     elif etapa == "aclaracion_permiso_no":
         if contiene_permiso_no(mensaje):
             return "permiso_no", "confirmado"
+        elif "agenda" in mensaje.lower() or "visita" in mensaje.lower() or "quiero" in mensaje.lower():
+            return "cierre", "esperando_cita"
         else:
             return "aclaracion_permiso_no", "esperando_cita"
 
