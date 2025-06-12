@@ -66,7 +66,7 @@ def determinar_siguiente_etapa(estado_actual, mensaje):
     fase = estado_actual.get("fase", "")
 
     if etapa == "" and fase == "inicio":
-        if detectar_actividad(mensaje):  # está bien como primer paso
+        if detectar_actividad(mensaje):
             return "introduccion", "actividad_detectada"
         else:
             return "", "inicio"
@@ -88,9 +88,28 @@ def determinar_siguiente_etapa(estado_actual, mensaje):
             return "aclaracion_introduccion", fase
 
     elif etapa == "permiso_si":
-        return "cierre", "esperando_cita"
+        if contiene_permiso_si(mensaje):
+            return "cierre", "esperando_cita"
+        else:
+            return "aclaracion_permiso_si", "esperando_cita"
+
+    elif etapa == "aclaracion_permiso_si":
+        if contiene_permiso_si(mensaje):
+            return "permiso_si", "confirmado"
+        else:
+            return "aclaracion_permiso_si", "esperando_cita"
+
     elif etapa == "permiso_no":
-        return "cierre", "esperando_cita"
+        if contiene_permiso_no(mensaje):
+            return "cierre", "esperando_cita"
+        else:
+            return "aclaracion_permiso_no", "esperando_cita"
+
+    elif etapa == "aclaracion_permiso_no":
+        if contiene_permiso_no(mensaje):
+            return "permiso_no", "confirmado"
+        else:
+            return "aclaracion_permiso_no", "esperando_cita"
 
     elif etapa == "cierre":
         if extraer_fecha_y_hora(mensaje):
@@ -107,7 +126,7 @@ def determinar_siguiente_etapa(estado_actual, mensaje):
     elif etapa == "agradecimiento":
         return "agradecimiento", "cita_registrada"
 
-    return etapa, fase  # por defecto, sin cambio
+    return etapa, fase
 
 def esta_bloqueado(chat_id):
     ahora = time.time()
@@ -128,38 +147,36 @@ def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual):
         print(f"🚫 Cliente respondió con frase negativa. Intentos: {estado['intentos_negativos']}")
         if estado["intentos_negativos"] >= 2:
             estado["fase"] = "cerrado_amablemente"
-            estado["ultima_interaccion"] = fecha_actual.isoformat() if fecha_actual else datetime.now(ZONA_HORARIA_EC).isoformat()
+            estado["ultima_interaccion"] = fecha_actual.isoformat()
             guardar_estado(chat_id, estado)
             registrar_mensaje(chat_id, mensaje)
             return obtener_respuesta_por_actividad(estado.get("actividad", "otros"), "salida_amable")
     else:
         estado["intentos_negativos"] = 0
 
-    es_primera_interaccion = not estado.get("actividad") and not estado.get("etapa") and not estado.get("ultima_interaccion")
-    etapa = estado.get("etapa")
-    fase_actual = estado.get("fase", "inicio")
+    etapa = estado.get("etapa", "")
+    fase = estado.get("fase", "inicio")
+    actividad_detectada = detectar_actividad(mensaje)
 
-        # 👋 Primera interacción: enviar saludo inicial
-    if estado.get("etapa", "") == "" and estado.get("fase", "") == "inicio":
+    # 👋 Primera vez: mostrar mensaje inicial
+    if etapa == "" and fase == "inicio":
         estado["fase"] = "esperando_actividad"
-        estado["ultima_interaccion"] = fecha_actual.isoformat() if fecha_actual else datetime.now(ZONA_HORARIA_EC).isoformat()
+        estado["ultima_interaccion"] = fecha_actual.isoformat()
         guardar_estado(chat_id, estado)
         registrar_mensaje(chat_id, mensaje)
         return RESPUESTA_INICIAL
 
-    # ⚠️ Detectar actividad si no está definida aún
-    if not estado.get("actividad") and estado.get("etapa", "") == "" and estado.get("fase", "") == "esperando_actividad":
-        actividad_detectada = detectar_actividad(mensaje)
+    # ⛔ No permitir avanzar si no hay actividad aún
+    if etapa == "" and fase == "esperando_actividad":
         if actividad_detectada:
             estado["actividad"] = actividad_detectada
             estado["etapa"] = "introduccion"
             estado["fase"] = "actividad_detectada"
             guardar_estado(chat_id, estado)
             registrar_mensaje(chat_id, mensaje)
-            print(f"🧠 Actividad detectada automáticamente: {actividad_detectada}")
             return obtener_respuesta_por_actividad(actividad_detectada, "introduccion")
         else:
-            estado["ultima_interaccion"] = fecha_actual.isoformat() if fecha_actual else datetime.now(ZONA_HORARIA_EC).isoformat()
+            estado["ultima_interaccion"] = fecha_actual.isoformat()
             guardar_estado(chat_id, estado)
             registrar_mensaje(chat_id, mensaje)
             return "🙏 Para poder orientarle mejor, ¿podría indicarnos a qué actividad se dedica? Ej: *bananera, camaronera, minería...* 🌱"
@@ -173,14 +190,14 @@ def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual):
         print(f"❌ Mensaje duplicado detectado para {chat_id}. Activando bloqueo.")
         return None
 
-    # 🚧 Determinar siguiente etapa basada en flujo estricto
+    # 🎯 Determinar siguiente etapa de forma estricta
     nueva_etapa, nueva_fase = determinar_siguiente_etapa(estado, mensaje)
     if nueva_etapa != estado.get("etapa") or nueva_fase != estado.get("fase"):
         print(f"➡️ Cambio de etapa: {estado.get('etapa')} → {nueva_etapa}")
         estado["etapa"] = nueva_etapa
         estado["fase"] = nueva_fase
 
-    # 🎯 Registro de cita solo si corresponde
+    # ⏱ Intentar extraer cita solo si estamos en etapa de cierre o aclaración
     if estado["etapa"] in ["cierre", "aclaracion_cierre"]:
         cita = extraer_fecha_y_hora(mensaje)
         if estado.get("fase") == "cita_registrada":
@@ -190,19 +207,19 @@ def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual):
             estado["etapa"] = "aclaracion_cierre"
             respuesta = obtener_respuesta_por_actividad(estado["actividad"], "aclaracion_cierre")
         else:
-            ubicacion = cita.get("ubicacion", "") or "No especificado"
-            registrar_cita(chat_id=chat_id, fecha=cita["fecha"], hora=cita["hora"], ubicacion=ubicacion)
+            registrar_cita(chat_id, cita["fecha"], cita["hora"], cita.get("ubicacion"))
             estado["etapa"] = "agradecimiento"
             estado["fase"] = "cita_registrada"
             respuesta = obtener_respuesta_por_actividad(estado["actividad"], "agradecimiento")
     else:
-        respuesta = obtener_respuesta_por_actividad(estado["actividad"], estado["etapa"])
+        respuesta = obtener_respuesta_por_actividad(estado.get("actividad", "otros"), estado["etapa"])
 
     # 💾 Guardar estado actualizado
-    estado["ultima_interaccion"] = fecha_actual.isoformat() if fecha_actual else datetime.now(ZONA_HORARIA_EC).isoformat()
+    estado["ultima_interaccion"] = fecha_actual.isoformat()
     estado["chat_id"] = chat_id
     guardar_estado(chat_id, estado)
     registrar_mensaje(chat_id, mensaje)
+
     return respuesta
 
 def reiniciar_conversacion(chat_id):
