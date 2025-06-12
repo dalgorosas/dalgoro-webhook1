@@ -223,9 +223,24 @@ def detectar_actividad(texto):
     # Si no hay coincidencia ni suficiente información
     return None
 
+PERMISOS_SI = [
+    "sí tengo", "ya tengo", "cuento con permiso", "cuento con registro", "sí contamos", "sí, tengo", "tengo permiso", "sí"
+]
+
+PERMISOS_NO = [
+    "no tengo", "no contamos", "aún no", "todavía no", "ninguno", "no", "no tengo ninguno", "no cuento con"
+]
+
+def contiene_permiso_si(texto):
+    texto = texto.lower()
+    return any(exp in texto for exp in PERMISOS_SI)
+
+def contiene_permiso_no(texto):
+    texto = texto.lower()
+    return any(exp in texto for exp in PERMISOS_NO)
+
 for actividad in FLUJOS_POR_ACTIVIDAD:
     FLUJOS_POR_ACTIVIDAD[actividad]["salida_amable"] = (
         "👌 Entiendo perfectamente. Si más adelante desea nuestra ayuda ambiental, estaremos disponibles por este medio. "
         "Gracias por habernos escrito 🌱"
     )
-

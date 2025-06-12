@@ -14,6 +14,8 @@ from control_antirrepeticion import mensaje_duplicado, registrar_mensaje, bloque
 from google_sheets_utils import registrar_cita_en_hoja
 from respuestas_por_actividad import detectar_actividad, obtener_respuesta_por_actividad, RESPUESTA_INICIAL
 from respuestas_por_actividad import NEGATIVOS_FUERTES
+from respuestas_por_actividad import contiene_permiso_si, contiene_permiso_no
+
 
 ZONA_HORARIA_EC = timezone(timedelta(hours=-5))
 
@@ -137,8 +139,16 @@ def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual):
     etapa = estado.get("etapa")
     fase_actual = estado.get("fase", "inicio")
 
-    # ⚠️ Detectar actividad si no está definida
-    if not estado.get("actividad"):
+        # 👋 Primera interacción: enviar saludo inicial
+    if estado.get("etapa", "") == "" and estado.get("fase", "") == "inicio":
+        estado["fase"] = "esperando_actividad"
+        estado["ultima_interaccion"] = fecha_actual.isoformat() if fecha_actual else datetime.now(ZONA_HORARIA_EC).isoformat()
+        guardar_estado(chat_id, estado)
+        registrar_mensaje(chat_id, mensaje)
+        return RESPUESTA_INICIAL
+
+    # ⚠️ Detectar actividad si no está definida aún
+    if not estado.get("actividad") and estado.get("etapa", "") == "" and estado.get("fase", "") == "esperando_actividad":
         actividad_detectada = detectar_actividad(mensaje)
         if actividad_detectada:
             estado["actividad"] = actividad_detectada
@@ -147,18 +157,12 @@ def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual):
             guardar_estado(chat_id, estado)
             registrar_mensaje(chat_id, mensaje)
             print(f"🧠 Actividad detectada automáticamente: {actividad_detectada}")
-            if es_primera_interaccion:
-                return RESPUESTA_INICIAL + "\n\n" + obtener_respuesta_por_actividad(actividad_detectada, "introduccion")
-            else:
-                return obtener_respuesta_por_actividad(actividad_detectada, "introduccion")
-
-        # Solicitar aclaración de actividad
-        estado["fase"] = "esperando_actividad"
-        estado["etapa"] = ""
-        estado["ultima_interaccion"] = fecha_actual.isoformat() if fecha_actual else datetime.now(ZONA_HORARIA_EC).isoformat()
-        guardar_estado(chat_id, estado)
-        registrar_mensaje(chat_id, mensaje)
-        return "🙏 Para poder orientarle mejor, ¿podría indicarnos a qué actividad se dedica? Ej: *bananera, camaronera, minería...* 🌱"
+            return obtener_respuesta_por_actividad(actividad_detectada, "introduccion")
+        else:
+            estado["ultima_interaccion"] = fecha_actual.isoformat() if fecha_actual else datetime.now(ZONA_HORARIA_EC).isoformat()
+            guardar_estado(chat_id, estado)
+            registrar_mensaje(chat_id, mensaje)
+            return "🙏 Para poder orientarle mejor, ¿podría indicarnos a qué actividad se dedica? Ej: *bananera, camaronera, minería...* 🌱"
 
     # 🛡️ Control de duplicados
     if bloqueo_activo(chat_id):
