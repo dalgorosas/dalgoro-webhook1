@@ -224,11 +224,24 @@ def detectar_actividad(texto):
     return None
 
 PERMISOS_SI = [
-    "sí tengo", "ya tengo", "cuento con permiso", "cuento con registro", "sí contamos", "sí, tengo", "tengo permiso", "sí"
+    "sí tengo", "ya tengo", "cuento con permiso", "cuento con registro", "sí contamos", "sí, tengo", 
+    "tengo permiso", "sí", "sí tengo los papeles", "sí tengo la licencia", "sí tengo el permiso",
+    "sí cuento con eso", "sí cuento con el registro", "sí tengo eso al día", 
+    "mis papeles están en regla", "sí, ya está hecho", "ya tengo todo", 
+    "sí me lo aprobaron", "me lo dieron hace tiempo", "ya está aprobado", 
+    "ya está legalizado", "sí, está vigente", "sí está al día", 
+    "sí, lo tengo actualizado", "sí, me lo entregaron", "sí está en orden", 
+    "tengo los documentos listos", "ya tengo todo en regla"
 ]
 
 PERMISOS_NO = [
-    "no tengo", "no contamos", "aún no", "todavía no", "ninguno", "no", "no tengo ninguno", "no cuento con"
+    "no tengo", "no contamos", "aún no", "todavía no", "ninguno", "no", 
+    "no tengo ninguno", "no cuento con", "aún no he sacado", "no me lo han dado", 
+    "todavía no lo tramito", "no está hecho", "aún no empiezo", "no tengo los papeles", 
+    "no he hecho el trámite", "no tengo ese permiso", "no tengo el registro", 
+    "me falta sacar eso", "estoy en eso", "me falta eso", "no lo he gestionado", 
+    "no me han aprobado nada", "nunca he hecho ese trámite", 
+    "no me han dado nada", "no está legalizado", "no tengo nada aún"
 ]
 
 def contiene_permiso_si(texto):
