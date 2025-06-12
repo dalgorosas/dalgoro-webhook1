@@ -2,7 +2,7 @@ from datetime import datetime
 from gestor_conversacion import enviar_alerta_a_personal
 
 # ✅ Simulación de datos ambiguos del cliente
-chat_id_prueba = "593984770663@c.us"  # No agregar otro @c.us aquí
+chat_id_prueba = "593984770663@c.us@c.us"  # No agregar otro @c.us aquí
 mensaje_prueba = "Podría ser la próxima semana en la tarde"
 actividad_prueba = "camaronera"
 etapa_prueba = "cierre"

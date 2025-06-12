@@ -28,9 +28,10 @@ estado_conversaciones = {}
 
 def enviar_alerta_a_personal(chat_id, mensaje, actividad, etapa, fase, fecha, nombre="(sin nombre)"):
     try:
-        # ✅ Siempre garantiza solo un @c.us
+        # ✅ Asegura que no se duplique el sufijo @c.us
         numero_base = "593984770663"
-        numero_personal = numero_base.replace("@c.us", "") + "@c.us"
+        import re
+        numero_personal = re.sub(r'(@c\.us)+$', '@c.us', f"{numero_base}@c.us")
 
         from dateutil.parser import parse as parse_fecha
         fecha_obj = fecha if isinstance(fecha, datetime) else parse_fecha(str(fecha))
@@ -44,6 +45,7 @@ def enviar_alerta_a_personal(chat_id, mensaje, actividad, etapa, fase, fecha, no
             f"🕒 {fecha_obj.strftime('%Y-%m-%d %H:%M')} - Requiere revisión manual."
         )
 
+        print(f"📦 JSON a enviar:\n{numero_personal=}\n{texto=}")
         enviar_mensaje(numero_personal, texto)
         print("📨 Notificación interna enviada por cita no registrada.")
 
@@ -52,10 +54,10 @@ def enviar_alerta_a_personal(chat_id, mensaje, actividad, etapa, fase, fecha, no
 
 def registrar_cita(chat_id, fecha, hora, ubicacion=None):
     print(f"🗕️ Se registró una cita para {chat_id}: {{'fecha': '{fecha}', 'hora': '{hora}', 'ubicacion': '{ubicacion}'}}")
-    
+
     ubicacion_segura = ubicacion or ""
     modalidad = "Finca" if "finca" in ubicacion_segura.lower() else "Oficina"
-    
+
     try:
         registrar_cita_en_hoja(
             contacto=chat_id,
@@ -67,8 +69,8 @@ def registrar_cita(chat_id, fecha, hora, ubicacion=None):
         )
 
         # ✅ Notificar al número personal del Ing. Darwin
-        numero_personal_base = "593984770663"
-        numero_personal = numero_personal_base.replace("@c.us", "") + "@c.us"
+        numero_base = "593984770663"
+        numero_personal = numero_base if numero_base.endswith("@c.us") else f"{numero_base}@c.us"
 
         mensaje_interno = (
             f"📢 *Nueva cita registrada:*\n"
@@ -79,6 +81,7 @@ def registrar_cita(chat_id, fecha, hora, ubicacion=None):
             f"✉️ Mensaje automático para coordinación inmediata."
         )
 
+        print(f"📦 Enviando a {numero_personal}:\n{mensaje_interno}")
         enviar_mensaje(numero_personal, mensaje_interno)
 
     except Exception as e:
@@ -91,9 +94,7 @@ def registrar_cita(chat_id, fecha, hora, ubicacion=None):
             f"📍 Ubicación: {ubicacion_segura or 'No especificado'}\n"
             f"⚠️ Detalle técnico: {str(e)}"
         )
-        numero_personal_fijo = "593984770663"
-        numero_formateado = numero_personal_fijo.replace("@c.us", "") + "@c.us"
-        enviar_mensaje(numero_formateado, mensaje_falla)
+        enviar_mensaje(numero_personal, mensaje_falla)
 
 def formatear_respuesta(respuesta):
     if isinstance(respuesta, str):
@@ -246,12 +247,12 @@ def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual):
                 registrar_mensaje(chat_id, mensaje)  # 🔎 Trazabilidad del mensaje del cliente
                 return obtener_respuesta_por_actividad(estado["actividad"], "agradecimiento")
 
-            if not isinstance(cita, dict) or "fecha" not in cita or "hora" not in cita:
+            if not isinstance(cita, dict):
+                print(f"⚠️ Error: 'cita' no es un dict. Tipo recibido: {type(cita)} - Valor: {cita}")
                 estado["etapa"] = "aclaracion_cierre"
                 respuesta = obtener_respuesta_por_actividad(estado["actividad"], "aclaracion_cierre")
                 if not respuesta:
                     respuesta = "Gracias por compartir la información. Para coordinar correctamente su cita, ¿podría confirmarnos por favor el *día*, la *hora* aproximada y si desea que lo visitemos en *finca u oficina*? Esta evaluación es sin costo 🌱"
-                # 🚨 Notificación en caso de cita no registrada
                 try:
                     enviar_alerta_a_personal(
                         chat_id=chat_id,
@@ -264,11 +265,32 @@ def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual):
                     )
                 except Exception as e:
                     print(f"⚠️ No se pudo enviar alerta personalizada: {e}")
+
+            elif "fecha" not in cita or "hora" not in cita:
+                print(f"⚠️ Error: falta 'fecha' u 'hora' en cita: {cita}")
+                estado["etapa"] = "aclaracion_cierre"
+                respuesta = obtener_respuesta_por_actividad(estado["actividad"], "aclaracion_cierre")
+                if not respuesta:
+                    respuesta = "Gracias por compartir la información. Para coordinar correctamente su cita, ¿podría confirmarnos por favor el *día*, la *hora* aproximada y si desea que lo visitemos en *finca u oficina*? Esta evaluación es sin costo 🌱"
+                try:
+                    enviar_alerta_a_personal(
+                        chat_id=chat_id,
+                        nombre=estado.get("nombre", "(sin nombre)"),
+                        actividad=estado.get("actividad", "(sin actividad)"),
+                        etapa=estado.get("etapa", ""),
+                        fase=estado.get("fase", ""),
+                        mensaje=mensaje,
+                        fecha=fecha_actual
+                    )
+                except Exception as e:
+                    print(f"⚠️ No se pudo enviar alerta personalizada: {e}")
+
             else:
                 registrar_cita(chat_id, cita["fecha"], cita["hora"], cita.get("ubicacion"))
                 estado["etapa"] = "agradecimiento"
                 estado["fase"] = "cita_registrada"
                 respuesta = obtener_respuesta_por_actividad(estado["actividad"], "agradecimiento")
+
         else:
             respuesta = obtener_respuesta_por_actividad(estado.get("actividad", "otros"), estado["etapa"])
 
