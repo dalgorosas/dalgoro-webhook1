@@ -134,10 +134,13 @@ def extraer_fecha_y_hora(texto):
             break
 
     if fecha_detectada or hora_detectada:
-        return {
+        resultado = {
             "fecha": fecha_detectada or hoy.strftime("%Y-%m-%d"),
             "hora": hora_detectada or "09:00",
             "ubicacion": ubicacion
         }
+        print("🧪 [DEBUG - cita detectada con fallback]", texto, "→", resultado)
+        return resultado
 
+    print("🧪 [DEBUG - sin cita detectable]", texto, "→ None")
     return None
