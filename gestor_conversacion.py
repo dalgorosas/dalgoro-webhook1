@@ -159,7 +159,8 @@ def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual):
     actividad_detectada = detectar_actividad(mensaje)
 
     # 👋 Primera vez: mostrar mensaje inicial
-    if etapa == "" and fase == "inicio":
+    if not etapa and fase == "inicio":
+
         estado["fase"] = "esperando_actividad"
         estado["ultima_interaccion"] = fecha_actual.isoformat()
         guardar_estado(chat_id, estado)
@@ -167,7 +168,7 @@ def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual):
         return RESPUESTA_INICIAL
 
     # ⛔ No permitir avanzar si no hay actividad aún
-    if etapa == "" and fase == "esperando_actividad":
+    if not etapa and fase == "esperando_actividad":
         if actividad_detectada:
             estado["actividad"] = actividad_detectada
             estado["etapa"] = "introduccion"
