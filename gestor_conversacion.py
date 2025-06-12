@@ -15,7 +15,8 @@ from google_sheets_utils import registrar_cita_en_hoja
 from respuestas_por_actividad import detectar_actividad, obtener_respuesta_por_actividad, RESPUESTA_INICIAL
 from respuestas_por_actividad import NEGATIVOS_FUERTES
 from respuestas_por_actividad import contiene_permiso_si, contiene_permiso_no
-
+from bot import enviar_mensaje  # Asegúrate que esta importación está activa arriba
+from dateutil.parser import parse as parse_fecha
 
 ZONA_HORARIA_EC = timezone(timedelta(hours=-5))
 
@@ -25,34 +26,74 @@ locks_chat = {}
 # Simulación de base de datos en memoria
 estado_conversaciones = {}
 
+def enviar_alerta_a_personal(chat_id, mensaje, actividad, etapa, fase, fecha, nombre="(sin nombre)"):
+    try:
+        # ✅ Siempre garantiza solo un @c.us
+        numero_base = "593984770663"
+        numero_personal = numero_base.replace("@c.us", "") + "@c.us"
+
+        from dateutil.parser import parse as parse_fecha
+        fecha_obj = fecha if isinstance(fecha, datetime) else parse_fecha(str(fecha))
+
+        texto = (
+            f"⚠️ *Cita NO registrada automáticamente*\n"
+            f"📞 Cliente: {chat_id.replace('@c.us', '')}\n"
+            f"🏷 Actividad: {actividad or '(sin definir)'}\n"
+            f"🔄 Etapa/Fase: {etapa} / {fase}\n"
+            f"📬 *Mensaje recibido:* _{mensaje}_\n"
+            f"🕒 {fecha_obj.strftime('%Y-%m-%d %H:%M')} - Requiere revisión manual."
+        )
+
+        enviar_mensaje(numero_personal, texto)
+        print("📨 Notificación interna enviada por cita no registrada.")
+
+    except Exception as e:
+        print(f"⚠️ No se pudo enviar alerta personalizada: {e}")
+
 def registrar_cita(chat_id, fecha, hora, ubicacion=None):
     print(f"🗕️ Se registró una cita para {chat_id}: {{'fecha': '{fecha}', 'hora': '{hora}', 'ubicacion': '{ubicacion}'}}")
     
     ubicacion_segura = ubicacion or ""
     modalidad = "Finca" if "finca" in ubicacion_segura.lower() else "Oficina"
-    registrar_cita_en_hoja(
-        contacto=chat_id,
-        fecha_cita=fecha,
-        hora=hora,
-        modalidad=modalidad,
-        lugar=ubicacion_segura or "No especificado",
-        observaciones=""
-    )
-    # ✅ Notificar al número personal del Ing. Darwin
-    from bot import enviar_mensaje  # Asegúrate que esta importación está activa arriba
+    
+    try:
+        registrar_cita_en_hoja(
+            contacto=chat_id,
+            fecha_cita=fecha,
+            hora=hora,
+            modalidad=modalidad,
+            lugar=ubicacion_segura or "No especificado",
+            observaciones=""
+        )
 
-    numero_personal = "593984770663@c.us"  # Reemplaza con tu número real
+        # ✅ Notificar al número personal del Ing. Darwin
+        numero_personal_base = "593984770663"
+        numero_personal = numero_personal_base.replace("@c.us", "") + "@c.us"
 
-    mensaje_interno = (
-        f"📢 *Nueva cita registrada:*\n"
-        f"📅 *Fecha:* {fecha}\n"
-        f"🕒 *Hora:* {hora}\n"
-        f"📍 *Lugar:* {ubicacion_segura or 'No especificado'}\n"
-        f"📞 *Cliente:* {chat_id.replace('@c.us', '')}\n"
-        f"✉️ Mensaje automático para coordinación inmediata."
-    )
+        mensaje_interno = (
+            f"📢 *Nueva cita registrada:*\n"
+            f"📅 *Fecha:* {fecha}\n"
+            f"🕒 *Hora:* {hora}\n"
+            f"📍 *Lugar:* {ubicacion_segura or 'No especificado'}\n"
+            f"📞 *Cliente:* {chat_id.replace('@c.us', '')}\n"
+            f"✉️ Mensaje automático para coordinación inmediata."
+        )
 
-    enviar_mensaje(numero_personal, mensaje_interno)
+        enviar_mensaje(numero_personal, mensaje_interno)
+
+    except Exception as e:
+        print(f"❌ Error al registrar o notificar cita: {e}")
+        mensaje_falla = (
+            f"🚨 *ERROR al guardar o notificar cita*\n"
+            f"📞 Cliente: {chat_id.replace('@c.us', '')}\n"
+            f"📅 Fecha: {fecha}\n"
+            f"🕒 Hora: {hora}\n"
+            f"📍 Ubicación: {ubicacion_segura or 'No especificado'}\n"
+            f"⚠️ Detalle técnico: {str(e)}"
+        )
+        numero_personal_fijo = "593984770663"
+        numero_formateado = numero_personal_fijo.replace("@c.us", "") + "@c.us"
+        enviar_mensaje(numero_formateado, mensaje_falla)
 
 def formatear_respuesta(respuesta):
     if isinstance(respuesta, str):
@@ -88,29 +129,23 @@ def determinar_siguiente_etapa(estado_actual, mensaje):
             return "aclaracion_introduccion", fase
 
     elif etapa == "permiso_si":
-        if contiene_permiso_si(mensaje):
-            return "cierre", "esperando_cita"
-        else:
-            return "aclaracion_permiso_si", "esperando_cita"
+        return "cierre", "esperando_cita"
 
     elif etapa == "aclaracion_permiso_si":
         if contiene_permiso_si(mensaje):
             return "permiso_si", "confirmado"
-        elif "agenda" in mensaje.lower() or "visita" in mensaje.lower() or "quiero" in mensaje.lower():
+        elif any(x in mensaje.lower() for x in ["agenda", "visita", "quiero"]):
             return "cierre", "esperando_cita"
         else:
             return "aclaracion_permiso_si", "esperando_cita"
 
     elif etapa == "permiso_no":
-        if contiene_permiso_no(mensaje):
-            return "cierre", "esperando_cita"
-        else:
-            return "aclaracion_permiso_no", "esperando_cita"
+        return "cierre", "esperando_cita"
 
     elif etapa == "aclaracion_permiso_no":
         if contiene_permiso_no(mensaje):
             return "permiso_no", "confirmado"
-        elif "agenda" in mensaje.lower() or "visita" in mensaje.lower() or "quiero" in mensaje.lower():
+        elif any(x in mensaje.lower() for x in ["agenda", "visita", "quiero"]):
             return "cierre", "esperando_cita"
         else:
             return "aclaracion_permiso_no", "esperando_cita"
@@ -143,89 +178,111 @@ def bloquear_chat(chat_id, segundos=1.5):
         locks_chat[chat_id] = Lock()
 
 def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual):
-    estado = obtener_estado_seguro(chat_id)
+    try:
+        estado = obtener_estado_seguro(chat_id)
 
-    # 🚫 Detección anticipada de desinterés o negativa persistente
-    if any(p in mensaje.lower() for p in NEGATIVOS_FUERTES):
-        estado["intentos_negativos"] = estado.get("intentos_negativos", 0) + 1
-        print(f"🚫 Cliente respondió con frase negativa. Intentos: {estado['intentos_negativos']}")
-        if estado["intentos_negativos"] >= 2:
-            estado["fase"] = "cerrado_amablemente"
+        # 🚫 Detección anticipada de desinterés o negativa persistente
+        if any(p in mensaje.lower() for p in NEGATIVOS_FUERTES):
+            estado["intentos_negativos"] = estado.get("intentos_negativos", 0) + 1
+            print(f"🚫 Cliente respondió con frase negativa. Intentos: {estado['intentos_negativos']}")
+            if estado["intentos_negativos"] >= 2:
+                estado["fase"] = "cerrado_amablemente"
+                estado["ultima_interaccion"] = fecha_actual.isoformat()
+                guardar_estado(chat_id, estado)
+                registrar_mensaje(chat_id, mensaje)
+                return obtener_respuesta_por_actividad(estado.get("actividad", "otros"), "salida_amable")
+        else:
+            estado["intentos_negativos"] = 0
+
+        etapa = estado.get("etapa", "")
+        fase = estado.get("fase", "inicio")
+        actividad_detectada = detectar_actividad(mensaje)
+
+        # 👋 Primera vez: mostrar mensaje inicial
+        if not etapa and fase == "inicio":
+            estado["fase"] = "esperando_actividad"
             estado["ultima_interaccion"] = fecha_actual.isoformat()
             guardar_estado(chat_id, estado)
             registrar_mensaje(chat_id, mensaje)
-            return obtener_respuesta_por_actividad(estado.get("actividad", "otros"), "salida_amable")
-    else:
-        estado["intentos_negativos"] = 0
+            return RESPUESTA_INICIAL
 
-    etapa = estado.get("etapa", "")
-    fase = estado.get("fase", "inicio")
-    actividad_detectada = detectar_actividad(mensaje)
+        # ⛔ No permitir avanzar si no hay actividad aún
+        if not etapa and fase == "esperando_actividad":
+            if actividad_detectada:
+                estado["actividad"] = actividad_detectada
+                estado["etapa"] = "introduccion"
+                estado["fase"] = "actividad_detectada"
+                guardar_estado(chat_id, estado)
+                registrar_mensaje(chat_id, mensaje)
+                return obtener_respuesta_por_actividad(actividad_detectada, "introduccion")
+            else:
+                estado["ultima_interaccion"] = fecha_actual.isoformat()
+                guardar_estado(chat_id, estado)
+                registrar_mensaje(chat_id, mensaje)
+                return "🙏 Para poder orientarle mejor, ¿podría indicarnos a qué actividad se dedica? Ej: *bananera, camaronera, minería...* 🌱"
 
-    # 👋 Primera vez: mostrar mensaje inicial
-    if not etapa and fase == "inicio":
+        # 🛡️ Control de duplicados
+        if bloqueo_activo(chat_id):
+            print(f"⚠️ Evitando duplicidad por bloqueo activo para {chat_id}")
+            return None
+        if mensaje_duplicado(chat_id, mensaje):
+            activar_bloqueo(chat_id)
+            print(f"❌ Mensaje duplicado detectado para {chat_id}. Activando bloqueo.")
+            return None
 
-        estado["fase"] = "esperando_actividad"
+        # 🎯 Determinar siguiente etapa de forma estricta
+        nueva_etapa, nueva_fase = determinar_siguiente_etapa(estado, mensaje)
+        if nueva_etapa != estado.get("etapa") or nueva_fase != estado.get("fase"):
+            print(f"➡️ Cambio de etapa: {estado.get('etapa')} → {nueva_etapa}")
+            estado["etapa"] = nueva_etapa
+            estado["fase"] = nueva_fase
+
+        # ⏱ Intentar extraer cita solo si estamos en etapa de cierre o aclaración
+        if estado["etapa"] in ["cierre", "aclaracion_cierre"]:
+            respuesta = None  # Evita error si nunca se asigna en siguientes bloques
+            cita = extraer_fecha_y_hora(mensaje)
+            if estado.get("fase") == "cita_registrada":
+                print(f"🔁 Ya se registró una cita antes para {chat_id}, evitando duplicado.")
+                registrar_mensaje(chat_id, mensaje)  # 🔎 Trazabilidad del mensaje del cliente
+                return obtener_respuesta_por_actividad(estado["actividad"], "agradecimiento")
+
+            if not isinstance(cita, dict) or "fecha" not in cita or "hora" not in cita:
+                estado["etapa"] = "aclaracion_cierre"
+                respuesta = obtener_respuesta_por_actividad(estado["actividad"], "aclaracion_cierre")
+                if not respuesta:
+                    respuesta = "Gracias por compartir la información. Para coordinar correctamente su cita, ¿podría confirmarnos por favor el *día*, la *hora* aproximada y si desea que lo visitemos en *finca u oficina*? Esta evaluación es sin costo 🌱"
+                # 🚨 Notificación en caso de cita no registrada
+                try:
+                    enviar_alerta_a_personal(
+                        chat_id=chat_id,
+                        nombre=estado.get("nombre", "(sin nombre)"),
+                        actividad=estado.get("actividad", "(sin actividad)"),
+                        etapa=estado.get("etapa", ""),
+                        fase=estado.get("fase", ""),
+                        mensaje=mensaje,
+                        fecha=fecha_actual
+                    )
+                except Exception as e:
+                    print(f"⚠️ No se pudo enviar alerta personalizada: {e}")
+            else:
+                registrar_cita(chat_id, cita["fecha"], cita["hora"], cita.get("ubicacion"))
+                estado["etapa"] = "agradecimiento"
+                estado["fase"] = "cita_registrada"
+                respuesta = obtener_respuesta_por_actividad(estado["actividad"], "agradecimiento")
+        else:
+            respuesta = obtener_respuesta_por_actividad(estado.get("actividad", "otros"), estado["etapa"])
+
+        # 💾 Guardar estado actualizado
         estado["ultima_interaccion"] = fecha_actual.isoformat()
+        estado["chat_id"] = chat_id
         guardar_estado(chat_id, estado)
         registrar_mensaje(chat_id, mensaje)
-        return RESPUESTA_INICIAL
 
-    # ⛔ No permitir avanzar si no hay actividad aún
-    if not etapa and fase == "esperando_actividad":
-        if actividad_detectada:
-            estado["actividad"] = actividad_detectada
-            estado["etapa"] = "introduccion"
-            estado["fase"] = "actividad_detectada"
-            guardar_estado(chat_id, estado)
-            registrar_mensaje(chat_id, mensaje)
-            return obtener_respuesta_por_actividad(actividad_detectada, "introduccion")
-        else:
-            estado["ultima_interaccion"] = fecha_actual.isoformat()
-            guardar_estado(chat_id, estado)
-            registrar_mensaje(chat_id, mensaje)
-            return "🙏 Para poder orientarle mejor, ¿podría indicarnos a qué actividad se dedica? Ej: *bananera, camaronera, minería...* 🌱"
+        return respuesta or "🙏 Gracias por su mensaje. En breve le responderemos personalmente para coordinar su cita. 🌱"
 
-    # 🛡️ Control de duplicados
-    if bloqueo_activo(chat_id):
-        print(f"⚠️ Evitando duplicidad por bloqueo activo para {chat_id}")
-        return None
-    if mensaje_duplicado(chat_id, mensaje):
-        activar_bloqueo(chat_id)
-        print(f"❌ Mensaje duplicado detectado para {chat_id}. Activando bloqueo.")
-        return None
-
-    # 🎯 Determinar siguiente etapa de forma estricta
-    nueva_etapa, nueva_fase = determinar_siguiente_etapa(estado, mensaje)
-    if nueva_etapa != estado.get("etapa") or nueva_fase != estado.get("fase"):
-        print(f"➡️ Cambio de etapa: {estado.get('etapa')} → {nueva_etapa}")
-        estado["etapa"] = nueva_etapa
-        estado["fase"] = nueva_fase
-
-    # ⏱ Intentar extraer cita solo si estamos en etapa de cierre o aclaración
-    if estado["etapa"] in ["cierre", "aclaracion_cierre"]:
-        cita = extraer_fecha_y_hora(mensaje)
-        if estado.get("fase") == "cita_registrada":
-            print(f"🔁 Ya se registró una cita antes para {chat_id}, evitando duplicado.")
-            return None
-        if not cita or not cita.get("fecha") or not cita.get("hora"):
-            estado["etapa"] = "aclaracion_cierre"
-            respuesta = obtener_respuesta_por_actividad(estado["actividad"], "aclaracion_cierre")
-        else:
-            registrar_cita(chat_id, cita["fecha"], cita["hora"], cita.get("ubicacion"))
-            estado["etapa"] = "agradecimiento"
-            estado["fase"] = "cita_registrada"
-            respuesta = obtener_respuesta_por_actividad(estado["actividad"], "agradecimiento")
-    else:
-        respuesta = obtener_respuesta_por_actividad(estado.get("actividad", "otros"), estado["etapa"])
-
-    # 💾 Guardar estado actualizado
-    estado["ultima_interaccion"] = fecha_actual.isoformat()
-    estado["chat_id"] = chat_id
-    guardar_estado(chat_id, estado)
-    registrar_mensaje(chat_id, mensaje)
-
-    return respuesta
+    except Exception as e:
+        print(f"❌ Error crítico en manejar_conversacion con {chat_id}: {e}")
+        return "Gracias por compartir la información. Para coordinar correctamente su cita, ¿podría confirmarnos por favor el *día*, la *hora* aproximada y si desea que lo visitemos en *finca u oficina*? Esta evaluación es sin costo 🌱"
 
 def reiniciar_conversacion(chat_id):
     if chat_id in estado_conversaciones:
