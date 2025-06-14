@@ -4,7 +4,6 @@ import re
 import pytz
 from dateparser.search import search_dates
 from lexico import EXPRESIONES_TIEMPO, EXPRESIONES_UBICACION
-from lexico import EXPRESIONES_UBICACION
 
 
 # ✅ ZONA HORARIA DE ECUADOR
@@ -72,10 +71,20 @@ def extraer_fecha_y_hora(texto):
             ubicacion = EXPRESIONES_UBICACION[expr]
             break
 
-    # Normalizar expresiones de tiempo adicionales si existen en el mapeo
-    for expr in EXPRESIONES_TIEMPO:
-        if expr.lower() in texto:
-            texto += f" {EXPRESIONES_TIEMPO[expr]}"
+    # Reforzar detección agregando patrones conocidos
+    for palabra_clave in EXPRESIONES_TIEMPO["relativo"]:
+        if palabra_clave.lower() in texto:
+            texto += f" {palabra_clave}"  # No es reemplazo, es refuerzo
+            break
+
+    for patron in EXPRESIONES_TIEMPO["fecha"]:
+        if re.search(patron, texto, re.IGNORECASE):
+            print(f"🔍 Patrón de fecha encontrado: {patron}")
+            break
+
+    for patron in EXPRESIONES_TIEMPO["hora"]:
+        if re.search(patron, texto, re.IGNORECASE):
+            print(f"🔍 Patrón de hora encontrado: {patron}")
             break
 
     # Primer intento con dateparser
@@ -90,9 +99,8 @@ def extraer_fecha_y_hora(texto):
         }
     )
 
-    if fecha_hora:
+    if fecha_hora and isinstance(fecha_hora, list) and isinstance(fecha_hora[0], (tuple, list)) and len(fecha_hora[0]) > 1:
         fecha_detectada = fecha_hora[0][1].astimezone(ZONA_HORARIA_EC)
-
         return {
             "fecha": fecha_detectada.strftime("%Y-%m-%d"),
             "hora": fecha_detectada.strftime("%H:%M"),

@@ -202,9 +202,9 @@ def registrar_cita_en_hoja(contacto, fecha_cita, hora, modalidad, lugar, observa
 
         # Verificar duplicados solo si la hoja tiene datos válidos
         for fila in filas:
-            id_c = str(fila.get("ID_Contacto", "")).strip()
-            fecha = str(fila.get("Fecha_Cita", "")).strip()
-            hora_fila = str(fila.get("Hora", "")).strip()
+            id_c = str(fila.get("contacto", "")).strip()
+            fecha = str(fila.get("fecha_cita", "")).strip()
+            hora_fila = str(fila.get("hora", "")).strip()
 
             if id_c == contacto and fecha == fecha_cita and hora_fila == hora:
                 print(f"⚠️ Ya existe una cita para {contacto} en {fecha_cita} a las {hora}.")
