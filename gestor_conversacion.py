@@ -253,18 +253,28 @@ def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual):
             print(f"❌ Etapa no válida: {nueva_etapa} no está definida para la actividad {actividad_actual}")
             return "🙏 Gracias por su mensaje. En breve le responderemos personalmente para coordinar su cita. 🌱"
 
-        # ⛔ No saltarse etapas: solo se permite avanzar al siguiente paso secuencial
-        if etapa_actual and nueva_etapa != etapa_actual:
-            etapas_definidas = list(flujo_definido.keys())
-            try:
-                indice_actual = etapas_definidas.index(etapa_actual)
-                indice_nueva = etapas_definidas.index(nueva_etapa)
-                if indice_nueva > indice_actual + 1:
-                    print(f"❌ Flujo inválido: intento de salto de '{etapa_actual}' a '{nueva_etapa}' en {actividad_actual}")
-                    return "🙏 Gracias por su mensaje. En breve le responderemos personalmente para coordinar su cita. 🌱"
-            except ValueError:
-                print(f"⚠️ Etapa actual o nueva no encontrada en el flujo: {etapa_actual}, {nueva_etapa}")
-                return "🙏 Gracias por su mensaje. En breve le responderemos personalmente para coordinar su cita. 🌱"
+        # ⛔ Validación estricta: no avanzar si la nueva_etapa no está definida
+        if nueva_etapa not in flujo_definido:
+            print(f"❌ Etapa no válida: {nueva_etapa} no está definida para la actividad {actividad_actual}")
+            return "🙏 Gracias por su mensaje. En breve le responderemos personalmente para coordinar su cita. 🌱"
+
+        # ⛔ No saltarse etapas: permitir solo transiciones válidas
+        etapas_definidas = list(flujo_definido.keys())
+        indice_actual = etapas_definidas.index(etapa_actual) if etapa_actual in etapas_definidas else -1
+        indice_nueva = etapas_definidas.index(nueva_etapa) if nueva_etapa in etapas_definidas else -1
+
+        # Permitir solo transiciones válidas o bifurcaciones esperadas
+        transicion_valida = (
+            indice_nueva == indice_actual + 1 or
+            (etapa_actual == "introduccion" and nueva_etapa in ["permiso_si", "permiso_no", "aclaracion_introduccion"]) or
+            (etapa_actual == "aclaracion_introduccion" and nueva_etapa in ["permiso_si", "permiso_no"]) or
+            (etapa_actual == "aclaracion_permiso_si" and nueva_etapa == "cierre") or
+            (etapa_actual == "aclaracion_permiso_no" and nueva_etapa == "cierre")
+        )
+
+        if not transicion_valida:
+            print(f"❌ Flujo inválido: intento de salto de '{etapa_actual}' a '{nueva_etapa}' en {actividad_actual}")
+            return "🙏 Gracias por su mensaje. En breve le responderemos personalmente para coordinar su cita. 🌱"
 
         # ✅ Si todo está correcto, actualizar estado
         if nueva_etapa != estado.get("etapa") or nueva_fase != estado.get("fase"):
