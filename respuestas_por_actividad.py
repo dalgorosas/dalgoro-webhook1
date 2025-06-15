@@ -231,7 +231,9 @@ PERMISOS_SI = [
     "sí me lo aprobaron", "me lo dieron hace tiempo", "ya está aprobado", 
     "ya está legalizado", "sí, está vigente", "sí está al día", 
     "sí, lo tengo actualizado", "sí, me lo entregaron", "sí está en orden", 
-    "tengo los documentos listos", "ya tengo todo en regla"
+    "tengo los documentos listos", "ya tengo todo en regla", 
+    "sí tengo todo en regla", "sí, todo está en orden", "ya está todo aprobado", "sí, ya está legalizado"
+
 ]
 
 PERMISOS_NO = [
@@ -241,7 +243,9 @@ PERMISOS_NO = [
     "no he hecho el trámite", "no tengo ese permiso", "no tengo el registro", 
     "me falta sacar eso", "estoy en eso", "me falta eso", "no lo he gestionado", 
     "no me han aprobado nada", "nunca he hecho ese trámite", 
-    "no me han dado nada", "no está legalizado", "no tengo nada aún"
+    "no me han dado nada", "no está legalizado", "no tengo nada aún",
+    "no he tramitado", "no está hecho aún", "estoy por comenzar", "no tengo todavía"
+
 ]
 
 def contiene_permiso_si(texto):
@@ -251,6 +255,18 @@ def contiene_permiso_si(texto):
 def contiene_permiso_no(texto):
     texto = texto.lower()
     return any(exp in texto for exp in PERMISOS_NO)
+
+def clasificar_permiso(texto):
+    texto = texto.lower()
+
+    if contiene_permiso_si(texto):
+        return "si"
+    elif contiene_permiso_no(texto):
+        return "no"
+    elif any(p in texto for p in ["permiso", "registro", "licencia", "documento", "papeles"]):
+        return "mencion"
+    else:
+        return None
 
 for actividad in FLUJOS_POR_ACTIVIDAD:
     FLUJOS_POR_ACTIVIDAD[actividad]["salida_amable"] = (

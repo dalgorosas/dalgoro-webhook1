@@ -22,6 +22,7 @@ from respuestas_por_actividad import NEGATIVOS_FUERTES
 from respuestas_por_actividad import contiene_permiso_si, contiene_permiso_no
 from bot import enviar_mensaje  # Asegúrate que esta importación está activa arriba
 from dateutil.parser import parse as parse_fecha
+from respuestas_por_actividad import clasificar_permiso  # asegúrate de importar
 
 ZONA_HORARIA_EC = timezone(timedelta(hours=-5))
 
@@ -121,39 +122,41 @@ def determinar_siguiente_etapa(estado_actual, mensaje):
             return "", "inicio"
 
     elif etapa == "introduccion":
-        if contiene_permiso_si(mensaje):
+        clasificacion = clasificar_permiso(mensaje)
+        if clasificacion == "si":
             return "permiso_si", "confirmado"
-        elif contiene_permiso_no(mensaje):
+        elif clasificacion == "no":
             return "permiso_no", "confirmado"
-        else:
+        elif clasificacion == "mencion":
             return "aclaracion_introduccion", fase
+        else:
+            return "introduccion", fase
 
     elif etapa == "aclaracion_introduccion":
-        if contiene_permiso_si(mensaje):
+        clasificacion = clasificar_permiso(mensaje)
+        if clasificacion == "si":
             return "permiso_si", "confirmado"
-        elif contiene_permiso_no(mensaje):
+        elif clasificacion == "no":
             return "permiso_no", "confirmado"
+        elif clasificacion == "mencion":
+            return "aclaracion_introduccion", fase
         else:
             return "aclaracion_introduccion", fase
 
-    elif etapa == "permiso_si":
-        return "permiso_si", "confirmado"
-
     elif etapa == "aclaracion_permiso_si":
-        if contiene_permiso_si(mensaje):
+        clasificacion = clasificar_permiso(mensaje)
+        if clasificacion == "si":
             return "permiso_si", "confirmado"
-        elif any(x in mensaje.lower() for x in ["agenda", "visita", "quiero"]):
+        elif any(x in mensaje.lower() for x in ["agenda", "visita", "quiero", "cita", "coordinar"]):
             return "cierre", "esperando_cita"
         else:
             return "aclaracion_permiso_si", "esperando_cita"
 
-    elif etapa == "permiso_no":
-        return "permiso_no", "confirmado"
-
     elif etapa == "aclaracion_permiso_no":
-        if contiene_permiso_no(mensaje):
+        clasificacion = clasificar_permiso(mensaje)
+        if clasificacion == "no":
             return "permiso_no", "confirmado"
-        elif any(x in mensaje.lower() for x in ["agenda", "visita", "quiero"]):
+        elif any(x in mensaje.lower() for x in ["agenda", "visita", "quiero", "cita", "coordinar"]):
             return "cierre", "esperando_cita"
         else:
             return "aclaracion_permiso_no", "esperando_cita"
@@ -241,10 +244,27 @@ def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual):
         # 🎯 Determinar siguiente etapa de forma estricta
         nueva_etapa, nueva_fase = determinar_siguiente_etapa(estado, mensaje)
 
-        # ⛔ Verificar que no se salte etapas fuera del flujo definido
-        if nueva_etapa not in FLUJOS_POR_ACTIVIDAD.get(estado.get("actividad", "otros"), {}):
-            print(f"❌ Etapa no válida detectada: {nueva_etapa} no existe para {estado.get('actividad')}")
+        actividad_actual = estado.get("actividad", "otros")
+        etapa_actual = estado.get("etapa")
+        flujo_definido = FLUJOS_POR_ACTIVIDAD.get(actividad_actual, {})
+
+        # ⛔ Validación estricta: no avanzar si la nueva_etapa no está definida
+        if nueva_etapa not in flujo_definido:
+            print(f"❌ Etapa no válida: {nueva_etapa} no está definida para la actividad {actividad_actual}")
             return "🙏 Gracias por su mensaje. En breve le responderemos personalmente para coordinar su cita. 🌱"
+
+        # ⛔ No saltarse etapas: solo se permite avanzar al siguiente paso secuencial
+        if etapa_actual and nueva_etapa != etapa_actual:
+            etapas_definidas = list(flujo_definido.keys())
+            try:
+                indice_actual = etapas_definidas.index(etapa_actual)
+                indice_nueva = etapas_definidas.index(nueva_etapa)
+                if indice_nueva > indice_actual + 1:
+                    print(f"❌ Flujo inválido: intento de salto de '{etapa_actual}' a '{nueva_etapa}' en {actividad_actual}")
+                    return "🙏 Gracias por su mensaje. En breve le responderemos personalmente para coordinar su cita. 🌱"
+            except ValueError:
+                print(f"⚠️ Etapa actual o nueva no encontrada en el flujo: {etapa_actual}, {nueva_etapa}")
+                return "🙏 Gracias por su mensaje. En breve le responderemos personalmente para coordinar su cita. 🌱"
 
         # ✅ Si todo está correcto, actualizar estado
         if nueva_etapa != estado.get("etapa") or nueva_fase != estado.get("fase"):
