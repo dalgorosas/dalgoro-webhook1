@@ -279,6 +279,15 @@ def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual):
             print(f"➡️ Cambio de etapa: {estado.get('etapa')} → {nueva_etapa}")
             estado["etapa"] = nueva_etapa
             estado["fase"] = nueva_fase
+        
+        # ✅ Generar respuesta inmediata para etapas intermedias sin cita
+        if estado["etapa"] in ["permiso_si", "permiso_no"]:
+            respuesta = obtener_respuesta_por_actividad(estado["actividad"], estado["etapa"])
+            estado["ultima_interaccion"] = fecha_actual.isoformat()
+            estado["chat_id"] = chat_id
+            guardar_estado(chat_id, estado)
+            registrar_mensaje(chat_id, mensaje)
+            return respuesta
 
         # ⏱ Intentar extraer cita solo si estamos en etapa de cierre o aclaración
         if estado["etapa"] in ["cierre", "aclaracion_cierre"]:
