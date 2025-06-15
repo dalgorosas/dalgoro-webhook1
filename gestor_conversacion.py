@@ -12,7 +12,12 @@ from seguimiento_silencio import manejar_seguimiento
 from google_sheets_utils import guardar_estado_en_sheets
 from control_antirrepeticion import mensaje_duplicado, registrar_mensaje, bloqueo_activo, activar_bloqueo
 from google_sheets_utils import registrar_cita_en_hoja
-from respuestas_por_actividad import detectar_actividad, obtener_respuesta_por_actividad, RESPUESTA_INICIAL
+from respuestas_por_actividad import (
+    detectar_actividad,
+    obtener_respuesta_por_actividad,
+    RESPUESTA_INICIAL,
+    FLUJOS_POR_ACTIVIDAD
+)
 from respuestas_por_actividad import NEGATIVOS_FUERTES
 from respuestas_por_actividad import contiene_permiso_si, contiene_permiso_no
 from bot import enviar_mensaje  # Asegúrate que esta importación está activa arriba
@@ -132,7 +137,7 @@ def determinar_siguiente_etapa(estado_actual, mensaje):
             return "aclaracion_introduccion", fase
 
     elif etapa == "permiso_si":
-        return "cierre", "esperando_cita"
+        return "permiso_si", "confirmado"
 
     elif etapa == "aclaracion_permiso_si":
         if contiene_permiso_si(mensaje):
@@ -143,7 +148,7 @@ def determinar_siguiente_etapa(estado_actual, mensaje):
             return "aclaracion_permiso_si", "esperando_cita"
 
     elif etapa == "permiso_no":
-        return "cierre", "esperando_cita"
+        return "permiso_no", "confirmado"
 
     elif etapa == "aclaracion_permiso_no":
         if contiene_permiso_no(mensaje):
@@ -235,6 +240,13 @@ def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual):
 
         # 🎯 Determinar siguiente etapa de forma estricta
         nueva_etapa, nueva_fase = determinar_siguiente_etapa(estado, mensaje)
+
+        # ⛔ Verificar que no se salte etapas fuera del flujo definido
+        if nueva_etapa not in FLUJOS_POR_ACTIVIDAD.get(estado.get("actividad", "otros"), {}):
+            print(f"❌ Etapa no válida detectada: {nueva_etapa} no existe para {estado.get('actividad')}")
+            return "🙏 Gracias por su mensaje. En breve le responderemos personalmente para coordinar su cita. 🌱"
+
+        # ✅ Si todo está correcto, actualizar estado
         if nueva_etapa != estado.get("etapa") or nueva_fase != estado.get("fase"):
             print(f"➡️ Cambio de etapa: {estado.get('etapa')} → {nueva_etapa}")
             estado["etapa"] = nueva_etapa
