@@ -243,7 +243,6 @@ def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual):
 
         # 🎯 Determinar siguiente etapa de forma estricta
         nueva_etapa, nueva_fase = determinar_siguiente_etapa(estado, mensaje)
-
         actividad_actual = estado.get("actividad", "otros")
         etapa_actual = estado.get("etapa")
         flujo_definido = FLUJOS_POR_ACTIVIDAD.get(actividad_actual, {})
@@ -253,23 +252,22 @@ def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual):
             print(f"❌ Etapa no válida: {nueva_etapa} no está definida para la actividad {actividad_actual}")
             return "🙏 Gracias por su mensaje. En breve le responderemos personalmente para coordinar su cita. 🌱"
 
-        # ⛔ Validación estricta: no avanzar si la nueva_etapa no está definida
-        if nueva_etapa not in flujo_definido:
-            print(f"❌ Etapa no válida: {nueva_etapa} no está definida para la actividad {actividad_actual}")
-            return "🙏 Gracias por su mensaje. En breve le responderemos personalmente para coordinar su cita. 🌱"
-
         # ⛔ No saltarse etapas: permitir solo transiciones válidas
         etapas_definidas = list(flujo_definido.keys())
+        
         indice_actual = etapas_definidas.index(etapa_actual) if etapa_actual in etapas_definidas else -1
         indice_nueva = etapas_definidas.index(nueva_etapa) if nueva_etapa in etapas_definidas else -1
 
-        # Permitir solo transiciones válidas o bifurcaciones esperadas
         transicion_valida = (
             indice_nueva == indice_actual + 1 or
             (etapa_actual == "introduccion" and nueva_etapa in ["permiso_si", "permiso_no", "aclaracion_introduccion"]) or
             (etapa_actual == "aclaracion_introduccion" and nueva_etapa in ["permiso_si", "permiso_no"]) or
+            (etapa_actual == "permiso_si" and nueva_etapa in ["cierre", "aclaracion_permiso_si"]) or
+            (etapa_actual == "permiso_no" and nueva_etapa in ["cierre", "aclaracion_permiso_no"]) or
             (etapa_actual == "aclaracion_permiso_si" and nueva_etapa == "cierre") or
-            (etapa_actual == "aclaracion_permiso_no" and nueva_etapa == "cierre")
+            (etapa_actual == "aclaracion_permiso_no" and nueva_etapa == "cierre") or
+            (etapa_actual == "cierre" and nueva_etapa == "agradecimiento") or
+            (etapa_actual == "aclaracion_cierre" and nueva_etapa == "agradecimiento")
         )
 
         if not transicion_valida:
@@ -286,66 +284,69 @@ def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual):
         if estado["etapa"] in ["cierre", "aclaracion_cierre"]:
             respuesta = None  # Evita error si nunca se asigna en siguientes bloques
             cita = extraer_fecha_y_hora(mensaje)
+    
             if estado.get("fase") == "cita_registrada":
                 print(f"🔁 Ya se registró una cita antes para {chat_id}, evitando duplicado.")
-                registrar_mensaje(chat_id, mensaje)  # 🔎 Trazabilidad del mensaje del cliente
+                registrar_mensaje(chat_id, mensaje)
                 return obtener_respuesta_por_actividad(estado["actividad"], "agradecimiento")
 
-        if not isinstance(cita, dict):
-            print(f"⚠️ Error: 'cita' no es un dict. Tipo recibido: {type(cita)} - Valor: {cita}")
-            estado["etapa"] = "aclaracion_cierre"
-            respuesta = obtener_respuesta_por_actividad(estado["actividad"], "aclaracion_cierre")
-            if not respuesta:
+            if not isinstance(cita, dict):
+                print(f"⚠️ Error: 'cita' no es un dict. Tipo recibido: {type(cita)} - Valor: {cita}")
+                estado["etapa"] = "aclaracion_cierre"
+                respuesta = obtener_respuesta_por_actividad(estado["actividad"], "aclaracion_cierre")
+                if not respuesta:
                     respuesta = "Gracias por compartir la información. Para coordinar correctamente su cita, ¿podría confirmarnos por favor el *día*, la *hora* aproximada y si desea que lo visitemos en *finca u oficina*? Esta evaluación es sin costo 🌱"
-            try:
-                enviar_alerta_a_personal(
-                    chat_id=chat_id,
-                    nombre=estado.get("nombre", "(sin nombre)"),
-                    actividad=estado.get("actividad", "(sin actividad)"),
-                    etapa=estado.get("etapa", ""),
-                    fase=estado.get("fase", ""),
-                    mensaje=mensaje,
-                    fecha=fecha_actual
-                )
-            except Exception as e:
-                print(f"⚠️ No se pudo enviar alerta personalizada: {e}")
+                try:
+                    enviar_alerta_a_personal(
+                        chat_id=chat_id,
+                        nombre=estado.get("nombre", "(sin nombre)"),
+                        actividad=estado.get("actividad", "(sin actividad)"),
+                        etapa=estado.get("etapa", ""),
+                        fase=estado.get("fase", ""),
+                        mensaje=mensaje,
+                        fecha=fecha_actual
+                    )
+                except Exception as e:
+                    print(f"⚠️ No se pudo enviar alerta personalizada: {e}")
+                guardar_estado(chat_id, estado)
+                registrar_mensaje(chat_id, mensaje)
+                return respuesta
 
-        elif "fecha" not in cita or "hora" not in cita:
-            print(f"⚠️ Error: falta 'fecha' u 'hora' en cita: {cita}")
-            estado["etapa"] = "aclaracion_cierre"
-            respuesta = obtener_respuesta_por_actividad(estado["actividad"], "aclaracion_cierre")
-            if not respuesta:
-                respuesta = "Gracias por compartir la información. Para coordinar correctamente su cita, ¿podría confirmarnos por favor el *día*, la *hora* aproximada y si desea que lo visitemos en *finca u oficina*? Esta evaluación es sin costo 🌱"
-            try:
-                enviar_alerta_a_personal(
-                    chat_id=chat_id,
-                    nombre=estado.get("nombre", "(sin nombre)"),
-                    actividad=estado.get("actividad", "(sin actividad)"),
-                    etapa=estado.get("etapa", ""),
-                    fase=estado.get("fase", ""),
-                    mensaje=mensaje,
-                    fecha=fecha_actual
-                )
-            except Exception as e:
-                  print(f"⚠️ No se pudo enviar alerta personalizada: {e}")
+            elif "fecha" not in cita or "hora" not in cita:
+                print(f"⚠️ Error: falta 'fecha' u 'hora' en cita: {cita}")
+                estado["etapa"] = "aclaracion_cierre"
+                respuesta = obtener_respuesta_por_actividad(estado["actividad"], "aclaracion_cierre")
+                if not respuesta:
+                    respuesta = "Gracias por compartir la información. Para coordinar correctamente su cita, ¿podría confirmarnos por favor el *día*, la *hora* aproximada y si desea que lo visitemos en *finca u oficina*? Esta evaluación es sin costo 🌱"
+                try:
+                    enviar_alerta_a_personal(
+                        chat_id=chat_id,
+                        nombre=estado.get("nombre", "(sin nombre)"),
+                        actividad=estado.get("actividad", "(sin actividad)"),
+                        etapa=estado.get("etapa", ""),
+                        fase=estado.get("fase", ""),
+                        mensaje=mensaje,
+                        fecha=fecha_actual
+                    )
+                except Exception as e:
+                    print(f"⚠️ No se pudo enviar alerta personalizada: {e}")
+                guardar_estado(chat_id, estado)
+                registrar_mensaje(chat_id, mensaje)
+                return respuesta
 
-        elif isinstance(cita, dict) and "fecha" in cita and "hora" in cita:
-            registrar_cita(chat_id, cita["fecha"], cita["hora"], cita.get("ubicacion"))
-    
-            estado["etapa"] = "agradecimiento"
-            estado["fase"] = "cita_registrada"
-            estado["ultima_interaccion"] = fecha_actual.isoformat()  # asegúrate de guardar esto también
-            estado["chat_id"] = chat_id
-    
-            respuesta = obtener_respuesta_por_actividad(estado["actividad"], "agradecimiento")
-    
-            guardar_estado(chat_id, estado)  # ← GUÁRDALO AQUÍ inmediatamente después de registrar la cita
-            registrar_mensaje(chat_id, mensaje)  # ← para trazabilidad
-            return respuesta
+            elif isinstance(cita, dict) and "fecha" in cita and "hora" in cita:
+                registrar_cita(chat_id, cita["fecha"], cita["hora"], cita.get("ubicacion"))
 
+                estado["etapa"] = "agradecimiento"
+                estado["fase"] = "cita_registrada"
+                estado["ultima_interaccion"] = fecha_actual.isoformat()
+                estado["chat_id"] = chat_id
 
-        else:
-            respuesta = obtener_respuesta_por_actividad(estado.get("actividad", "otros"), estado["etapa"])
+                respuesta = obtener_respuesta_por_actividad(estado["actividad"], "agradecimiento")
+
+                guardar_estado(chat_id, estado)
+                registrar_mensaje(chat_id, mensaje)
+                return respuesta
 
         # 💾 Guardar estado actualizado
         estado["ultima_interaccion"] = fecha_actual.isoformat()
