@@ -139,73 +139,95 @@ FLUJOS_POR_ACTIVIDAD = {
     }
 } 
 
-# Refuerzo de seguridad para asegurar que todas las actividades tengan clave 'agradecimiento' y 'salida_amable'
-for actividad_key in FLUJOS_POR_ACTIVIDAD: # Renombrada la variable del bucle para evitar confusión
-    if "agradecimiento" not in FLUJOS_POR_ACTIVIDAD[actividad_key]:
-        FLUJOS_POR_ACTIVIDAD[actividad_key]["agradecimiento"] = "✅ Su cita ha sido registrada correctamente. El Ing. Darwin González Romero se comunicará con usted mediante el número 0984770663 para confirmar los detalles. ¡Gracias por confiar en nosotros! 🌿"
-    if "salida_amable" not in FLUJOS_POR_ACTIVIDAD[actividad_key]:
-        FLUJOS_POR_ACTIVIDAD[actividad_key]["salida_amable"] = "👌 Entiendo perfectamente. Si más adelante desea nuestra ayuda ambiental, estaremos disponibles por este medio. Gracias por habernos escrito 🌱"
+# Refuerzo de seguridad para asegurar que todas las actividades tengan clave 'agradecimiento'
+for actividad in [
+    "bananera", "camaronera", "mineria", "cacaotera", "ciclo_corto",
+    "granja_avicola", "granja_porcina", "hotel", "industria", "otros"
+]:
+    if actividad not in FLUJOS_POR_ACTIVIDAD:
+        FLUJOS_POR_ACTIVIDAD[actividad] = {}
+    if "agradecimiento" not in FLUJOS_POR_ACTIVIDAD[actividad]:
+        FLUJOS_POR_ACTIVIDAD[actividad]["agradecimiento"] = "✅ Su cita ha sido registrada correctamente. El Ing. Darwin González Romero se comunicará con usted mediante el número 0984770663 para confirmar los detalles. ¡Gracias por confiar en nosotros! 🌿"
 
 def obtener_respuesta_por_actividad(actividad, etapa):
-    flujo = FLUJOS_POR_ACTIVIDAD.get(actividad, FLUJOS_POR_ACTIVIDAD.get("otros", {})) # Fallback a 'otros' si actividad no existe
+    flujo = FLUJOS_POR_ACTIVIDAD.get(actividad, {})
 
     if not etapa:
         return "🤖 Aún no logro comprender su solicitud. ¿Podría explicarnos un poco más sobre su actividad o requerimiento?"
 
+    # Limpieza automática de errores comunes como 'aclaracion_aclaracion_permiso_si'
     etapa_limpia = etapa
     while etapa_limpia.startswith("aclaracion_aclaracion_"):
         etapa_limpia = etapa_limpia.replace("aclaracion_aclaracion_", "aclaracion_", 1)
 
     if etapa_limpia not in flujo:
-        etapa_sin_aclaracion = etapa_limpia.replace("aclaracion_", "")
-        if etapa_sin_aclaracion in flujo:
-            respuesta = flujo.get(etapa_sin_aclaracion)
-        else:
-            respuesta = None
-    else:
-        respuesta = flujo.get(etapa_limpia)
+        etapa_limpia = etapa_limpia.replace("aclaracion_", "")
+    
+    respuesta = flujo.get(etapa_limpia)
     
     if respuesta:
         return respuesta
-    elif actividad and etapa_limpia in FLUJOS_POR_ACTIVIDAD.get("otros", {}):
-        return FLUJOS_POR_ACTIVIDAD["otros"].get(etapa_limpia)
     else:
-        # print(f"Advertencia: Etapa '{etapa_limpia}' no encontrada para actividad '{actividad}'. Usando respuesta por defecto.")
-        return FLUJOS_POR_ACTIVIDAD.get("otros", {}).get("aclaracion_introduccion", "📝 Estamos para ayudarle. ¿Podría indicarnos si ya cuenta con permisos ambientales o desea iniciar el proceso?") # Fallback más genérico
+        return "📝 Estamos para ayudarle. ¿Podría indicarnos si ya cuenta con permisos ambientales o desea iniciar el proceso?"
 
 def detectar_actividad(texto):
-    texto_procesado = texto.lower().strip()
+    texto = texto.lower().strip()
 
-    if any(p in texto_procesado for p in ["banano", "bananera", "finca bananera", "plantación de banano", "guineo", "guineal", "banana"]):
+    if any(p in texto for p in [
+        "banano", "bananera", "finca bananera", "plantación de banano", "guineo", "guineal", "banana"
+    ]):
         return "bananera"
-    elif any(p in texto_procesado for p in ["camaronera", "camarón", "piscina camaronera", "piscinas", "camaronicultura", "piscinas de camarón"]):
+
+    elif any(p in texto for p in [
+        "camaronera", "camarón", "piscina camaronera", "piscinas", "camaronicultura", "piscinas de camarón"
+    ]):
         return "camaronera"
-    elif any(p in texto_procesado for p in ["minería", "mina", "material pétreo", "extracción minera", "cantera", "áridos", "grava", "ripio", "piedra"]):
+
+    elif any(p in texto for p in [
+        "minería", "mina", "material pétreo", "extracción minera", "cantera", "áridos", "grava", "ripio", "piedra"
+    ]):
         return "mineria"
-    elif any(p in texto_procesado for p in ["cacao", "cacaotera", "plantación de cacao", "cacaotal", "trabajo con cacao", "finca de cacao"]):
+
+    elif any(p in texto for p in [
+        "cacao", "cacaotera", "plantación de cacao", "cacaotal", "trabajo con cacao", "finca de cacao"
+    ]):
         return "cacaotera"
-    elif any(p in texto_procesado for p in ["ciclo corto", "maíz", "arroz", "hortalizas", "cultivo pequeño", "frijol", "frejol", "legumbres", "tomate", "cebolla", "verde"]):
-        return "ciclo_corto"
-    elif any(p in texto_procesado for p in ["cerdo", "porcino", "granja porcina", "chancho", "lechón", "cría de cerdos", "cerdos", "chanchería"]):
-        return "granja_porcina"
-    elif any(p in texto_procesado for p in ["pollo", "gallina", "granja avícola", "aves", "pollos", "ponedoras", "gallinero", "pollera"]):
-        return "granja_avicola"
-    elif any(p in texto_procesado for p in ["hotel", "hospedaje", "hostal", "turismo", "alojamiento", "cabañas", "resort"]):
+
+    elif any(p in texto for p in [
+        "ciclo corto", "maíz", "arroz", "hortalizas", "cultivo pequeño", "frijol", "frejol", "legumbres", "tomate", "cebolla", "verde"
+    ]):
+        return "ciclo corto"
+
+    elif any(p in texto for p in [
+        "cerdo", "porcino", "granja porcina", "chancho", "lechón", "cría de cerdos", "cerdos", "chanchería"
+    ]):
+        return "granja porcina"
+
+    elif any(p in texto for p in [
+        "pollo", "gallina", "granja avícola", "aves", "pollos", "ponedoras", "gallinero", "pollera"
+    ]):
+        return "granja avicola"
+
+    elif any(p in texto for p in [
+        "hotel", "hospedaje", "hostal", "turismo", "alojamiento", "cabañas", "resort"
+    ]):
         return "hotel"
-    elif any(p in texto_procesado for p in ["industria", "fábrica", "empresa industrial", "procesadora", "procesamiento", "industrial"]):
+
+    elif any(p in texto for p in [
+        "industria", "fábrica", "empresa industrial", "procesadora", "procesamiento", "industrial"
+    ]):
         return "industria"
 
-    if len(texto_procesado) >= 10 and "otra" in texto_procesado:
+    # Si el texto es suficientemente largo, se asume como "otros"
+    if len(texto) >= 10:
         return "otros"
-    # Se eliminó la condición `if len(texto_procesado) >=10: return "otros"` para evitar clasificaciones erróneas
-    # si no coincide con nada específico y es largo. Es mejor que devuelva None y se pida aclaración.
 
+    # Si no hay coincidencia ni suficiente información
     return None
 
-# --- INICIO SECCIÓN MODIFICADA PARA CLASIFICAR PERMISOS ---
-PERMISOS_SI_FRASES = [
+PERMISOS_SI = [
     "sí tengo", "ya tengo", "cuento con permiso", "cuento con registro", "sí contamos", "sí, tengo", 
-    "tengo permiso", "sí tengo los papeles", "sí tengo la licencia", "sí tengo el permiso",
+    "tengo permiso", "sí", "sí tengo los papeles", "sí tengo la licencia", "sí tengo el permiso",
     "sí cuento con eso", "sí cuento con el registro", "sí tengo eso al día", 
     "mis papeles están en regla", "sí, ya está hecho", "ya tengo todo", 
     "sí me lo aprobaron", "me lo dieron hace tiempo", "ya está aprobado", 
@@ -213,10 +235,11 @@ PERMISOS_SI_FRASES = [
     "sí, lo tengo actualizado", "sí, me lo entregaron", "sí está en orden", 
     "tengo los documentos listos", "ya tengo todo en regla", 
     "sí tengo todo en regla", "sí, todo está en orden", "ya está todo aprobado", "sí, ya está legalizado"
+
 ]
 
-PERMISOS_NO_FRASES = [
-    "no tengo", "no contamos", "aún no", "todavía no", "ninguno", 
+PERMISOS_NO = [
+    "no tengo", "no contamos", "aún no", "todavía no", "ninguno", "no", 
     "no tengo ninguno", "no cuento con", "aún no he sacado", "no me lo han dado", 
     "todavía no lo tramito", "no está hecho", "aún no empiezo", "no tengo los papeles", 
     "no he hecho el trámite", "no tengo ese permiso", "no tengo el registro", 
@@ -224,241 +247,31 @@ PERMISOS_NO_FRASES = [
     "no me han aprobado nada", "nunca he hecho ese trámite", 
     "no me han dado nada", "no está legalizado", "no tengo nada aún",
     "no he tramitado", "no está hecho aún", "estoy por comenzar", "no tengo todavía"
+
 ]
 
-PALABRAS_MENCION_PERMISO = ["permiso", "registro", "licencia", "documento", "papeles"]
+def contiene_permiso_si(texto):
+    texto = texto.lower()
+    return any(exp in texto for exp in PERMISOS_SI)
 
-def contiene_permiso_si(texto_usuario):
-    texto_limpio = texto_usuario.lower().strip()
-    # from unidecode import unidecode # Descomentar si se quiere usar unidecode
-    # texto_limpio = unidecode(texto_limpio) # Aplicar la misma normalización a las frases de las listas
-
-    afirmaciones_exactas = ["si", "sí", "sip", "s", "afirmativo", "correcto", "así es", "efectivamente", "ya tengo", "ya contamos"]
-    if texto_limpio in afirmaciones_exactas:
-        return True
-
-    # Para casos como "si." o "si, gracias", donde la afirmación es la palabra principal.
-    for afirmacion in afirmaciones_exactas:
-        if texto_limpio.startswith(afirmacion) and len(texto_limpio) <= len(afirmacion) + 2: 
-            if re.fullmatch(re.escape(afirmacion) + r"[\s.,¿?¡!]*", texto_limpio):
-                 return True
-
-    # Si se normalizan tildes, PERMISOS_SI_FRASES también debe estar normalizada (sin tildes)
-    # y las frases en PERMISOS_SI_FRASES ya deberían estar en minúsculas.
-    if any(exp in texto_limpio for exp in PERMISOS_SI_FRASES):
-        return True
-            
-    return False
-
-def contiene_permiso_no(texto_usuario):
-    texto_limpio = texto_usuario.lower().strip()
-    # from unidecode import unidecode
-    # texto_limpio = unidecode(texto_limpio)
-
-    negaciones_exactas = ["no", "nop", "negativo", "nunca"]
-    if texto_limpio in negaciones_exactas:
-        return True
-
-    for negacion in negaciones_exactas:
-        if texto_limpio.startswith(negacion) and len(texto_limpio) <= len(negacion) + 2:
-            if re.fullmatch(re.escape(negacion) + r"[\s.,¿?¡!]*", texto_limpio):
-                return True
-
-    if any(exp in texto_limpio for exp in PERMISOS_NO_FRASES):
-        return True
-                
-    return False
+def contiene_permiso_no(texto):
+    texto = texto.lower()
+    return any(exp in texto for exp in PERMISOS_NO)
 
 def clasificar_permiso(texto):
-    texto_normalizado = texto.lower().strip()
-    # from unidecode import unidecode
-    # texto_normalizado = unidecode(texto_normalizado) 
+    texto = texto.lower()
 
-    if contiene_permiso_no(texto_normalizado):
-        return "no"
-    elif contiene_permiso_si(texto_normalizado):
+    if contiene_permiso_si(texto):
         return "si"
-    elif any(p in texto_normalizado for p in PALABRAS_MENCION_PERMISO): # Asegurar que 'p' también esté en minúsculas
+    elif contiene_permiso_no(texto):
+        return "no"
+    elif any(p in texto for p in ["permiso", "registro", "licencia", "documento", "papeles"]):
         return "mencion"
     else:
         return None
-# --- FIN DE SECCIÓN MODIFICADA ---
 
-Ahora, el script completo sugerido para estado_storage.py:
-
-# estado_storage.py
-import os
-import json
-from tinydb import TinyDB, Query
-from pytz import timezone
-from datetime import datetime
-from dateutil.parser import isoparse
-
-db_path = 'estado_usuarios.json'
-
-def cargar_db_instance():
-    needs_reconstruction = False
-    if not os.path.exists(db_path):
-        print(f"📂 {db_path} no existe.")
-        needs_reconstruction = True
-    else:
-        try:
-            with open(db_path, 'r', encoding='utf-8') as f:
-                content = f.read().strip()
-                if not content:
-                    print(f"📂 {db_path} existe pero está vacío.")
-                    needs_reconstruction = True
-                else:
-                    data = json.loads(content)
-                    if not isinstance(data, dict) or (len(data) > 0 and "_default" not in data and not all(isinstance(k, str) and isinstance(v, dict) for k, v in data.items())):
-                        print(f"❌ {db_path} parece corrupto (estructura interna no esperada por TinyDB).")
-                        needs_reconstruction = True
-        except json.JSONDecodeError:
-            print(f"❌ {db_path} corrupto (JSON inválido).")
-            needs_reconstruction = True
-        except Exception as e:
-            print(f"⚠️ Error inesperado al verificar {db_path}: {e}.")
-            needs_reconstruction = True
-
-    if needs_reconstruction:
-        if os.path.exists(db_path):
-            try:
-                os.remove(db_path)
-                print(f"🗑 Archivo corrupto {db_path} eliminado.")
-            except OSError as e:
-                print(f"⚠️ No se pudo eliminar el archivo corrupto {db_path}: {e}")
-
-        print("🔄 Intentando reconstruir/poblar base de datos desde Google Sheets...")
-        try:
-            from google_sheets_utils import cargar_estados_desde_sheets
-            estados_desde_sheets = cargar_estados_desde_sheets()
-            temp_db = TinyDB(db_path, encoding='utf-8', ensure_ascii=False, indent=4)
-            if estados_desde_sheets:
-                temp_db.table(TinyDB.DEFAULT_TABLE_NAME).truncate()
-                temp_db.table(TinyDB.DEFAULT_TABLE_NAME).insert_multiple(estados_desde_sheets)
-                print(f"✅ {len(estados_desde_sheets)} estados cargados desde Sheets y guardados en {db_path}.")
-            else:
-                print(f"⚠️ No se cargaron estados desde Sheets o la lista estaba vacía. {db_path} podría estar vacío o solo con estructura inicial.")
-            return temp_db
-        except ImportError:
-            print("⚠️ No se pudo importar `google_sheets_utils` para reconstruir. Se creará una DB vacía.")
-            # Crear archivo JSON vacío si no se puede importar o falla la carga de Sheets
-            with open(db_path, 'w', encoding='utf-8') as f:
-                json.dump({}, f) # Crea un JSON vacío válido para TinyDB
-            return TinyDB(db_path, encoding='utf-8', ensure_ascii=False, indent=4)
-        except Exception as e:
-            print(f"❌ Error crítico durante la reconstrucción desde Sheets: {e}. Se creará una DB vacía.")
-            if not os.path.exists(db_path):
-                 with open(db_path, 'w', encoding='utf-8') as f:
-                    json.dump({}, f)
-            return TinyDB(db_path, encoding='utf-8', ensure_ascii=False, indent=4)
-    else:
-        print(f"✅ Usando base de datos existente: {db_path}")
-        return TinyDB(db_path, encoding='utf-8', ensure_ascii=False, indent=4)
-
-# --- Inicialización Global ÚNICA y Correcta ---
-db = cargar_db_instance()
-Conversacion = Query()
-
-def obtener_estado(chat_id):
-    print(f"🔎 Buscando estado para: {chat_id}")
-    resultado = db.get(Conversacion.chat_id == chat_id)
-    
-    if resultado:
-        if "ultima_interaccion" in resultado and isinstance(resultado["ultima_interaccion"], str):
-            try:
-                resultado["ultima_interaccion"] = isoparse(resultado["ultima_interaccion"])
-            except ValueError:
-                print(f"⚠️ No se pudo convertir 'ultima_interaccion' a datetime para {chat_id}: {resultado['ultima_interaccion']}")
-                resultado["ultima_interaccion"] = datetime.now(timezone('America/Guayaquil')) 
-        print(f"✅ Estado encontrado para {chat_id}: {resultado}")
-        return resultado
-    else:
-        zona_ecuador = timezone('America/Guayaquil')
-        nuevo = {
-            "chat_id": chat_id,
-            "actividad": None,
-            "etapa": None,
-            "fase": "inicio",
-            "ultima_interaccion": datetime.now(zona_ecuador).isoformat(),
-            "intentos_negativos": 0,
-            "ultimo_mensaje_id": None
-        }
-        print(f"🆕 Estado nuevo creado para {chat_id}: {nuevo}")
-        return nuevo
-
-def guardar_estado(chat_id, nuevo_estado):
-    if "chat_id" not in nuevo_estado:
-        nuevo_estado["chat_id"] = chat_id
-        
-    zona_ecuador = timezone('America/Guayaquil')
-    
-    current_time = datetime.now(zona_ecuador)
-    # Asegurar que ultima_interaccion sea string en formato ISO para guardar en JSON
-    # Si el estado ya tiene una 'ultima_interaccion' y es un objeto datetime, la formatea.
-    # Si no, o si no es un datetime, la establece a la hora actual.
-    if isinstance(nuevo_estado.get("ultima_interaccion"), datetime):
-        nuevo_estado["ultima_interaccion"] = nuevo_estado["ultima_interaccion"].isoformat()
-    elif not isinstance(nuevo_estado.get("ultima_interaccion"), str): # Si no es str, o no existe
-        nuevo_estado["ultima_interaccion"] = current_time.isoformat()
-    else: # Es un string, intentar parsear para asegurar formato, o usar actual si falla
-        try:
-            isoparse(nuevo_estado["ultima_interaccion"])
-        except ValueError:
-            print(f"Advertencia: 'ultima_interaccion' en estado no es ISO string válido, actualizando a ahora: {nuevo_estado['ultima_interaccion']}")
-            nuevo_estado["ultima_interaccion"] = current_time.isoformat()
-
-    print(f"📦 Estado a guardar en DB para {chat_id}: {nuevo_estado}")
-    db.upsert(nuevo_estado, Conversacion.chat_id == chat_id)
-    
-    try:
-        from google_sheets_utils import guardar_estado_en_sheets
-        guardar_estado_en_sheets(chat_id, nuevo_estado)
-    except Exception as e:
-        print(f"⚠️ No se pudo guardar estado en Sheets para {chat_id}: {e}")
-
-def reiniciar_estado(chat_id):
-    print(f"🗑 Reiniciando estado para {chat_id}")
-    db.remove(Conversacion.chat_id == chat_id)
-    
-    zona_ecuador = timezone('America/Guayaquil')
-    estado_inicial = {
-        "chat_id": chat_id,
-        "actividad": None,
-        "etapa": None,
-        "fase": "inicio",
-        "ultima_interaccion": datetime.now(zona_ecuador).isoformat(),
-        "intentos_negativos": 0,
-        "ultimo_mensaje_id": None
-    }
-    guardar_estado(chat_id, estado_inicial) 
-    print(f"✅ Estado reiniciado y guardado para {chat_id}.")
-
-def obtener_estado_seguro(chat_id):
-    try:
-        return obtener_estado(chat_id)
-    except Exception as e:
-        print(f"⚠️ Error crítico al obtener estado para {chat_id}: {e}. Devolviendo estado por defecto.")
-        zona_ecuador = timezone('America/Guayaquil')
-        return {
-            "chat_id": chat_id,
-            "actividad": None,
-            "etapa": None,
-            "fase": "inicio",
-            "ultima_interaccion": datetime.now(zona_ecuador).isoformat(),
-            "intentos_negativos": 0,
-            "ultimo_mensaje_id": None
-        }
-
-def mensaje_ya_procesado(chat_id, mensaje_id):
-    if not mensaje_id:
-        return False
-    estado = obtener_estado_seguro(chat_id)
-    return estado.get("ultimo_mensaje_id") == mensaje_id
-
-def registrar_mensaje_procesado(chat_id, mensaje_id):
-    if not mensaje_id:
-        return
-    estado = obtener_estado_seguro(chat_id)
-    estado["ultimo_mensaje_id"] = mensaje_id
-    guardar_estado(chat_id, estado)
+for actividad in FLUJOS_POR_ACTIVIDAD:
+    FLUJOS_POR_ACTIVIDAD[actividad]["salida_amable"] = (
+        "👌 Entiendo perfectamente. Si más adelante desea nuestra ayuda ambiental, estaremos disponibles por este medio. "
+        "Gracias por habernos escrito 🌱"
+    )
