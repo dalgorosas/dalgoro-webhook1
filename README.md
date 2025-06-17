@@ -9,12 +9,20 @@ Servidor Flask para responder mensajes de WhatsApp mediante Green API y registra
    pip install -r requirements.txt
    ```
 2. **Configurar variables de entorno**
-   - `GREEN_API_TOKEN`: token de acceso para la API.
-   - `GREENAPI_INSTANCE_ID` y `GREENAPI_API_TOKEN`: credenciales utilizadas por `bot.py` (opcional).
-   - `GOOGLE_CREDENTIALS_JSON`: JSON con credenciales de servicio para Google Sheets.
+   - `GREENAPI_INSTANCE_ID` y `GREENAPI_API_TOKEN`: credenciales para la API de Green API.
+   - `GOOGLE_CREDENTIALS_JSON`: ruta al archivo JSON de la cuenta de servicio de Google o el JSON en formato de cadena.
 3. **Ejecutar la aplicación**
    - En desarrollo: `python app.py`
-   - En producción (ejemplo del `Procfile`): `gunicorn webhook:app`
+   - En producción: `gunicorn webhook:app`
+   
+   El repositorio mantiene un único `Procfile` en la raíz con el comando anterior
+   para despliegues en plataformas como Heroku.
+
+## Configurar credenciales de Google
+
+1. Crea un proyecto y una cuenta de servicio en la consola de Google Cloud.
+2. Descarga el archivo JSON de la cuenta de servicio y comparte tu hoja de cálculo con el correo de dicha cuenta.
+3. Coloca el archivo como `dalgoro-api-ea1fa305d0ca.json` en la raíz del proyecto **o** define la variable `GOOGLE_CREDENTIALS_JSON` con la ruta al archivo (o su contenido).
 
 ## Scripts de prueba
 

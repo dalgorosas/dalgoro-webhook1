@@ -49,20 +49,43 @@ def guardar_estado_en_sheets(chat_id, estado):
         logger.info("➕ Estado nuevo registrado en Sheets para %s.", chat_id)
 
 def obtener_credenciales():
-    try:
-        # INTENTO 1: usar variable de entorno si está bien cargada
-        cred_json = os.getenv("GOOGLE_CREDENTIALS_JSON")
-        if cred_json and cred_json.strip():
-            cred_dict = json.loads(cred_json)
-            return ServiceAccountCredentials.from_json_keyfile_dict(cred_dict, SCOPE)
-    except Exception as e:
-        logger.warning("⚠️ Variable de entorno no válida. Motivo: %s", e)
+    """Obtiene las credenciales de Google para acceder a Sheets.
 
-    # INTENTO 2: modo local con archivo JSON
-    logger.info("🗂️ Usando archivo local de credenciales.")
-    with open("dalgoro-api-ea1fa305d0ca.json", "r", encoding="utf-8") as f:
-        cred_dict = json.load(f)
-    return ServiceAccountCredentials.from_json_keyfile_dict(cred_dict, SCOPE)
+    Primero intenta utilizar la variable de entorno ``GOOGLE_CREDENTIALS_JSON``.
+    Esta variable puede contener la ruta a un archivo JSON o el JSON completo en
+    formato de cadena. Si falla, se intenta cargar el archivo local
+    ``dalgoro-api-ea1fa305d0ca.json``. En caso de no encontrar credenciales se
+    lanza ``FileNotFoundError`` con un mensaje descriptivo.
+    """
+
+    cred_json = os.getenv("GOOGLE_CREDENTIALS_JSON")
+    if cred_json:
+        try:
+            if os.path.isfile(cred_json):
+                with open(cred_json, "r", encoding="utf-8") as f:
+                    cred_dict = json.load(f)
+            else:
+                cred_dict = json.loads(cred_json)
+            return ServiceAccountCredentials.from_json_keyfile_dict(cred_dict, SCOPE)
+        
+        except Exception as e:
+            logger.warning("⚠️ No se pudo usar GOOGLE_CREDENTIALS_JSON: %s", e)
+
+    archivo_local = "dalgoro-api-ea1fa305d0ca.json"
+    try:
+        with open(archivo_local, "r", encoding="utf-8") as f:
+            cred_dict = json.load(f)
+        logger.info("🗂️ Credenciales cargadas desde %s", archivo_local)
+        return ServiceAccountCredentials.from_json_keyfile_dict(cred_dict, SCOPE)
+    except FileNotFoundError:
+        logger.warning("⚠️ Archivo de credenciales '%s' no encontrado.", archivo_local) 
+    
+    except Exception as e:
+        logger.error("❌ Error al cargar credenciales desde %s: %s", archivo_local, e)
+
+    raise FileNotFoundError(
+        "Credenciales de Google no encontradas. Define GOOGLE_CREDENTIALS_JSON o coloca el archivo '%s' en el proyecto." % archivo_local
+    )
 
 def conectar_hoja(nombre_hoja):
     creds = obtener_credenciales()

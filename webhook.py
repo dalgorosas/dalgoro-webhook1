@@ -21,8 +21,8 @@ logger = logging.getLogger(__name__)
 # ----------------------
 # Verificación de entorno
 # ----------------------
-if not Config.GREEN_API_INSTANCE or not Config.GREEN_API_TOKEN:
-    raise EnvironmentError("❌ GREEN_API_INSTANCE o GREEN_API_TOKEN no están definidos en variables de entorno.")
+if not Config.GREENAPI_INSTANCE_ID or not Config.GREENAPI_API_TOKEN:
+    raise EnvironmentError("❌ GREENAPI_INSTANCE_ID o GREENAPI_API_TOKEN no están definidos en variables de entorno.")
 
 # ----------------------
 # Control de límites
@@ -153,7 +153,7 @@ if __name__ == "__main__":
         import requests
         from config import Config
 
-        url = f"https://api.green-api.com/waInstance{Config.GREEN_API_INSTANCE}/getSettings/{Config.GREEN_API_TOKEN}"
+        url = f"https://api.green-api.com/waInstance{Config.GREENAPI_INSTANCE_ID}/getSettings/{Config.GREENAPI_API_TOKEN}"
         r = requests.get(url)
         logger.info("🔍 Resultado validación: %s %s", r.status_code, r.text)
 
