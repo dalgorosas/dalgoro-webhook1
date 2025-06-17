@@ -1,8 +1,8 @@
 import os
 
 class Config:
-    GREEN_API_INSTANCE = "7105252633"  # Puedes mantenerlo fijo
-    GREEN_API_TOKEN = os.getenv("GREEN_API_TOKEN")  # ← Esto debe venir del entorno
+    GREENAPI_INSTANCE_ID = os.getenv("7105252633")
+    GREENAPI_API_TOKEN = os.getenv("67c2dece454947aba9d8d44daca573ccfa41c248c0424464a8")
     GREEN_API_BASE_URL = "https://api.green-api.com"
 
     DEFAULT_RESPONSES = {
