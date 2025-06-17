@@ -4,16 +4,20 @@ from datetime import datetime
 from zona_horaria import ZONA_HORARIA_EC
 from gestor_conversacion import manejar_conversacion, reiniciar_conversacion
 from estado_storage import obtener_estado_seguro
-from pprint import pprint
+from pprint import pformat
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 def probar_flujo_completo(chat_id, mensajes_usuario):
-    print(f"\n📲 Iniciando simulación para: {chat_id}")
+    logger.info("\n📲 Iniciando simulación para: %s", chat_id)
     reiniciar_conversacion(chat_id)
 
     actividad = None  # Variable dinámica por si se detecta automáticamente
 
     for mensaje in mensajes_usuario:
-        print(f"\n👤 Usuario: {mensaje}")
+        logger.info("\n👤 Usuario: %s", mensaje)
         respuesta = manejar_conversacion(
             chat_id,
             mensaje,
@@ -21,18 +25,18 @@ def probar_flujo_completo(chat_id, mensajes_usuario):
             fecha_actual=datetime.now(ZONA_HORARIA_EC)
         )
         if respuesta:
-            print(f"🤖 Bot: {respuesta}")
+            logger.info("🤖 Bot: %s", respuesta)
         else:
-            print("🤖 Bot no respondió (posible bloqueo o duplicado)")
+            logger.warning("🤖 Bot no respondió (posible bloqueo o duplicado)")
 
         # Verificar si se detectó una actividad nueva desde estado
         estado = obtener_estado_seguro(chat_id)
         if estado.get("actividad"):
             actividad = estado["actividad"]
 
-    print("\n📦 Estado final almacenado:")
+    logger.info("\n📦 Estado final almacenado:")
     estado = obtener_estado_seguro(chat_id)
-    pprint(estado)
+    logger.info(pformat(estado))
 
 # 🧪 Escenarios de prueba
 pruebas = {

@@ -5,6 +5,10 @@ from zona_horaria import ZONA_HORARIA_EC
 from estado_storage import obtener_estado_seguro, guardar_estado
 from google_sheets_utils import registrar_mensaje_seguimiento
 from enviador import enviar_mensaje
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 SEGUIMIENTOS = [
     {
@@ -55,7 +59,7 @@ def manejar_seguimiento(chat_id):
     estado = obtener_estado_seguro(chat_id)
 
     if not estado.get("ultima_interaccion"):
-        print(f"⏳ No se encontró última_interaccion para {chat_id}")
+        logger.info("⏳ No se encontró ultima_interaccion para %s", chat_id)
         return
 
     ultima_interaccion = datetime.datetime.fromisoformat(estado["ultima_interaccion"])
@@ -65,7 +69,7 @@ def manejar_seguimiento(chat_id):
     mensaje = obtener_mensaje_seguimiento(minutos_transcurridos)
     if mensaje:
         enviar_mensaje(chat_id, mensaje)
-        print(f"📨 Seguimiento enviado a {chat_id}: {mensaje}")
+        logger.info("📨 Seguimiento enviado a %s: %s", chat_id, mensaje)
 
         # Actualizar estado
         estado["ultima_interaccion"] = ahora.isoformat()

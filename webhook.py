@@ -9,13 +9,13 @@ import requests
 import logging
 import json
 from mensaje_ids import cargar_ids, guardar_ids
-from datetime import timezone, timedelta
-ZONA_HORARIA_EC = timezone(timedelta(hours=-5))
+from zona_horaria import ZONA_HORARIA_EC
 
 mensajes_recientes = cargar_ids()
 
 
 app = Flask(__name__)
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # ----------------------
@@ -66,18 +66,14 @@ def recibir():
     if data.get("typeWebhook") != "incomingMessageReceived":
         return jsonify({"status": "ignorado"}), 200
     
-    print("📥 JSON recibido:\n", json.dumps(data, indent=2))
+    logger.info("📥 JSON recibido:\n%s", json.dumps(data, indent=2))
     
     mensaje_id = data.get("idMessage") or data.get("messageData", {}).get("idMessage")
     if mensaje_id in mensajes_recientes:
-        print(f"⚠️ Mensaje duplicado detectado: {mensaje_id}")
+        logger.warning("⚠️ Mensaje duplicado detectado: %s", mensaje_id)
         return jsonify({"status": "duplicado"}), 200
     else:
         mensajes_recientes.add(mensaje_id)
-
-    # Ignorar eventos que no son mensajes entrantes
-    if data.get("typeWebhook") != "incomingMessageReceived":
-        return jsonify({"status": "ignorado"}), 200
 
     try:
         tipo = data["messageData"].get("typeMessage", "")
@@ -89,7 +85,7 @@ def recibir():
             mensaje = ""
         telefono = data["senderData"]["chatId"].replace("@c.us", "")
     except KeyError as e:
-        print("❌ Clave faltante en JSON:", e)
+        logger.error("❌ Clave faltante en JSON: %s", e)
         return jsonify({"error": "Estructura de mensaje no esperada"}), 400
 
     if not telefono or not mensaje:
@@ -118,14 +114,14 @@ def recibir():
 
     # ❗ Evitar procesar dos veces el mismo mensaje
     if mensaje_ya_procesado(chat_id, mensaje_id):
-        print(f"⏹️ Mensaje ya procesado anteriormente: {mensaje_id}")
+        logger.info("⏹️ Mensaje ya procesado anteriormente: %s", mensaje_id)
         return jsonify({"status": "ya_procesado"}), 200
 
     try:
         respuesta = manejar_conversacion(chat_id, mensaje, None, ultima_interaccion)
-        print(f"📤 Respuesta generada para {telefono}: {respuesta}")
+        logger.info("📤 Respuesta generada para %s: %s", telefono, respuesta)
     except Exception as e:
-        print(f"❌ Error al manejar conversación con {telefono}: {e}")
+        logger.error("❌ Error al manejar conversación con %s: %s", telefono, e)
         respuesta = None
         
     # ✅ Marcar como procesado aunque haya error para evitar reenvíos infinitos
@@ -159,7 +155,7 @@ if __name__ == "__main__":
 
         url = f"https://api.green-api.com/waInstance{Config.GREEN_API_INSTANCE}/getSettings/{Config.GREEN_API_TOKEN}"
         r = requests.get(url)
-        print("🔍 Resultado validación:", r.status_code, r.text)
+        logger.info("🔍 Resultado validación: %s %s", r.status_code, r.text)
 
     validar_token()
     app.run(debug=True, port=5000)

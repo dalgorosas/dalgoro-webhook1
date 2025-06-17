@@ -1,4 +1,4 @@
-from datetime import datetime, timezone, timedelta
+from datetime import datetime
 from threading import Lock
 import time
 from dateutil.parser import isoparse
@@ -23,8 +23,11 @@ from respuestas_por_actividad import contiene_permiso_si, contiene_permiso_no
 from bot import enviar_mensaje  # Asegúrate que esta importación está activa arriba
 from dateutil.parser import parse as parse_fecha
 from respuestas_por_actividad import clasificar_permiso  # asegúrate de importar
+from zona_horaria import ZONA_HORARIA_EC
+import logging
 
-ZONA_HORARIA_EC = timezone(timedelta(hours=-5))
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 def formatear_chat_id(numero_base):
     if numero_base.endswith('@c.us'):
@@ -54,15 +57,15 @@ def enviar_alerta_a_personal(chat_id, mensaje, actividad, etapa, fase, fecha, no
             f"🕒 {fecha_obj.strftime('%Y-%m-%d %H:%M')} - Requiere revisión manual."
         )
 
-        print(f"📦 JSON a enviar:\n{numero_personal=}\n{texto=}")
+        logger.debug("📦 JSON a enviar:\nnumero_personal=%s\ntexto=%s", numero_personal, texto)
         enviar_mensaje(numero_personal, texto)
-        print("📨 Notificación interna enviada por cita no registrada.")
+        logger.info("📨 Notificación interna enviada por cita no registrada.")
 
     except Exception as e:
-        print(f"⚠️ No se pudo enviar alerta personalizada: {e}")
+        logger.warning("⚠️ No se pudo enviar alerta personalizada: %s", e)
 
 def registrar_cita(chat_id, fecha, hora, ubicacion=None):
-    print(f"🗕️ Se registró una cita para {chat_id}: {{'fecha': '{fecha}', 'hora': '{hora}', 'ubicacion': '{ubicacion}'}}")
+    logger.info("🗕️ Se registró una cita para %s: {'fecha': '%s', 'hora': '%s', 'ubicacion': '%s'}", chat_id, fecha, hora, ubicacion)
 
     ubicacion_segura = ubicacion or ""
     modalidad = "Finca" if "finca" in ubicacion_segura.lower() else "Oficina"
@@ -89,11 +92,11 @@ def registrar_cita(chat_id, fecha, hora, ubicacion=None):
             f"✉️ Mensaje automático para coordinación inmediata."
         )
 
-        print(f"📦 Enviando a {numero_personal}:\n{mensaje_interno}")
+        logger.debug("📦 Enviando a %s:\n%s", numero_personal, mensaje_interno)
         enviar_mensaje(numero_personal, mensaje_interno)
 
     except Exception as e:
-        print(f"❌ Error al registrar o notificar cita: {e}")
+        logger.error("❌ Error al registrar o notificar cita: %s", e)
         mensaje_falla = (
             f"🚨 *ERROR al guardar o notificar cita*\n"
             f"📞 Cliente: {chat_id.replace('@c.us', '')}\n"
@@ -195,7 +198,7 @@ def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual):
         # 🚫 Detección anticipada de desinterés o negativa persistente
         if any(p in mensaje.lower() for p in NEGATIVOS_FUERTES):
             estado["intentos_negativos"] = estado.get("intentos_negativos", 0) + 1
-            print(f"🚫 Cliente respondió con frase negativa. Intentos: {estado['intentos_negativos']}")
+            logger.info("🚫 Cliente respondió con frase negativa. Intentos: %s", estado['intentos_negativos'])
             if estado["intentos_negativos"] >= 2:
                 estado["fase"] = "cerrado_amablemente"
                 estado["ultima_interaccion"] = fecha_actual.isoformat()
@@ -234,11 +237,11 @@ def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual):
 
         # 🛡️ Control de duplicados
         if bloqueo_activo(chat_id):
-            print(f"⚠️ Evitando duplicidad por bloqueo activo para {chat_id}")
+            logger.warning("⚠️ Evitando duplicidad por bloqueo activo para %s", chat_id)
             return None
         if mensaje_duplicado(chat_id, mensaje):
             activar_bloqueo(chat_id)
-            print(f"❌ Mensaje duplicado detectado para {chat_id}. Activando bloqueo.")
+            logger.warning("❌ Mensaje duplicado detectado para %s. Activando bloqueo.", chat_id)
             return None
 
         # 🎯 Determinar siguiente etapa de forma estricta
@@ -249,7 +252,7 @@ def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual):
 
         # ⛔ Validación estricta: no avanzar si la nueva_etapa no está definida
         if nueva_etapa not in flujo_definido:
-            print(f"❌ Etapa no válida: {nueva_etapa} no está definida para la actividad {actividad_actual}")
+            logger.error("❌ Etapa no válida: %s no está definida para la actividad %s", nueva_etapa, actividad_actual)
             return "🙏 Gracias por su mensaje. En breve le responderemos personalmente para coordinar su cita. 🌱"
 
         # ⛔ No saltarse etapas: permitir solo transiciones válidas
@@ -271,12 +274,12 @@ def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual):
         )
 
         if not transicion_valida:
-            print(f"❌ Flujo inválido: intento de salto de '{etapa_actual}' a '{nueva_etapa}' en {actividad_actual}")
+            logger.error("❌ Flujo inválido: intento de salto de '%s' a '%s' en %s", etapa_actual, nueva_etapa, actividad_actual)
             return "🙏 Gracias por su mensaje. En breve le responderemos personalmente para coordinar su cita. 🌱"
 
         # ✅ Si todo está correcto, actualizar estado
         if nueva_etapa != estado.get("etapa") or nueva_fase != estado.get("fase"):
-            print(f"➡️ Cambio de etapa: {estado.get('etapa')} → {nueva_etapa}")
+            logger.debug("➡️ Cambio de etapa: %s → %s", estado.get('etapa'), nueva_etapa)
             estado["etapa"] = nueva_etapa
             estado["fase"] = nueva_fase
         
@@ -295,12 +298,12 @@ def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual):
             cita = extraer_fecha_y_hora(mensaje)
     
             if estado.get("fase") == "cita_registrada":
-                print(f"🔁 Ya se registró una cita antes para {chat_id}, evitando duplicado.")
+                logger.info("🔁 Ya se registró una cita antes para %s, evitando duplicado.", chat_id)
                 registrar_mensaje(chat_id, mensaje)
                 return obtener_respuesta_por_actividad(estado["actividad"], "agradecimiento")
 
             if not isinstance(cita, dict):
-                print(f"⚠️ Error: 'cita' no es un dict. Tipo recibido: {type(cita)} - Valor: {cita}")
+                logger.warning("⚠️ Error: 'cita' no es un dict. Tipo recibido: %s - Valor: %s", type(cita), cita)
                 estado["etapa"] = "aclaracion_cierre"
                 respuesta = obtener_respuesta_por_actividad(estado["actividad"], "aclaracion_cierre")
                 if not respuesta:
@@ -316,13 +319,13 @@ def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual):
                         fecha=fecha_actual
                     )
                 except Exception as e:
-                    print(f"⚠️ No se pudo enviar alerta personalizada: {e}")
+                    logger.warning("⚠️ No se pudo enviar alerta personalizada: %s", e)
                 guardar_estado(chat_id, estado)
                 registrar_mensaje(chat_id, mensaje)
                 return respuesta
 
             elif "fecha" not in cita or "hora" not in cita:
-                print(f"⚠️ Error: falta 'fecha' u 'hora' en cita: {cita}")
+                logger.warning("⚠️ Error: falta 'fecha' u 'hora' en cita: %s", cita)
                 estado["etapa"] = "aclaracion_cierre"
                 respuesta = obtener_respuesta_por_actividad(estado["actividad"], "aclaracion_cierre")
                 if not respuesta:
@@ -338,7 +341,7 @@ def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual):
                         fecha=fecha_actual
                     )
                 except Exception as e:
-                    print(f"⚠️ No se pudo enviar alerta personalizada: {e}")
+                    logger.warning("⚠️ No se pudo enviar alerta personalizada: %s", e)
                 guardar_estado(chat_id, estado)
                 registrar_mensaje(chat_id, mensaje)
                 return respuesta
@@ -365,13 +368,13 @@ def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual):
 
         # Validación adicional de seguridad
         if not isinstance(respuesta, str):
-            print(f"❌ [ERROR] Respuesta inesperada (tipo {type(respuesta)}): {respuesta}")
+            logger.error("❌ [ERROR] Respuesta inesperada (tipo %s): %s", type(respuesta), respuesta)
             respuesta = "Gracias por su mensaje. En breve coordinaremos su cita."
 
         return respuesta or "🙏 Gracias por su mensaje. En breve le responderemos personalmente para coordinar su cita. 🌱"
 
     except Exception as e:
-        print(f"❌ Error crítico en manejar_conversacion con {chat_id}: {e}")
+        logger.exception("❌ Error crítico en manejar_conversacion con %s: %s", chat_id, e)
         return "Gracias por compartir la información. Para coordinar correctamente su cita, ¿podría confirmarnos por favor el *día*, la *hora* aproximada y si desea que lo visitemos en *finca u oficina*? Esta evaluación es sin costo 🌱"
 
 def reiniciar_conversacion(chat_id):

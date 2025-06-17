@@ -3,6 +3,10 @@
 
 from datetime import datetime, timedelta
 from gestor_conversacion import manejar_conversacion
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Simular prueba completa del flujo con múltiples escenarios
 def ejecutar_pruebas():
@@ -47,14 +51,14 @@ def ejecutar_pruebas():
     ]
 
     for caso in casos:
-        print(f"\n{caso['descripcion']}")
+        logger.info("\n%s", caso['descripcion'])
         respuesta = manejar_conversacion(
             caso['chat_id'],
             caso['mensaje'],
             caso['actividad_actual'],
             caso['ultima_interaccion']
         )
-        print("📨 Respuesta del bot:", respuesta.strip())
+        logger.info("📨 Respuesta del bot: %s", respuesta.strip())
 
 if __name__ == "__main__":
     ejecutar_pruebas()

@@ -3,11 +3,16 @@ import os
 import json
 import gspread
 from google.oauth2.service_account import Credentials
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # === CONFIGURACIÓN ===
 CONTACTO_PRUEBA = "593984770663@c.us"  # Cambiar si usas otro número
 CONTACTO_PURO = CONTACTO_PRUEBA.replace("@c.us", "")
-RUTA_BASE = r"C:\Users\grdar\Desktop\bot_dalgoro\dalgoro-webhook1"
+# Directorio base del proyecto
+RUTA_BASE = os.path.dirname(os.path.abspath(__file__))
 ARCHIVOS_JSON = [
     "mensajes_recientes.json",
     "bloqueos.json",
@@ -30,11 +35,11 @@ def limpiar_json_local():
                 del data[CONTACTO_PRUEBA]
                 with open(ruta, "w", encoding="utf-8") as f:
                     json.dump(data, f, indent=2)
-                print(f"✅ Eliminado {CONTACTO_PRUEBA} de {nombre_archivo}")
+                logger.info("✅ Eliminado %s de %s", CONTACTO_PRUEBA, nombre_archivo)
             else:
-                print(f"ℹ️ {CONTACTO_PRUEBA} no está en {nombre_archivo}")
+                logger.info("ℹ️ %s no está en %s", CONTACTO_PRUEBA, nombre_archivo)
         else:
-            print(f"⚠️ No existe el archivo: {ruta}")
+            logger.warning("⚠️ No existe el archivo: %s", ruta)
 
 def obtener_hoja(nombre_hoja):
     creds = Credentials.from_service_account_file(ARCHIVO_CREDENCIALES, scopes=SCOPES)
@@ -46,12 +51,12 @@ def borrar_fila_por_campo(nombre_hoja, campo):
     hoja = obtener_hoja(nombre_hoja)
     datos = hoja.get_all_values()
     if not datos:
-        print(f"⚠️ Hoja vacía: {nombre_hoja}")
+        logger.warning("⚠️ Hoja vacía: %s", nombre_hoja)
         return
 
     headers = datos[0]
     if campo not in headers:
-        print(f"⚠️ Campo '{campo}' no encontrado en hoja '{nombre_hoja}'")
+        logger.warning("⚠️ Campo '%s' no encontrado en hoja '%s'", campo, nombre_hoja)
         return
 
     index = headers.index(campo)
@@ -66,16 +71,16 @@ def borrar_fila_por_campo(nombre_hoja, campo):
 
     for i in reversed(filas_a_borrar):
         hoja.delete_rows(i)
-    print(f"🗑️ {len(filas_a_borrar)} filas eliminadas en hoja '{nombre_hoja}' usando columna '{campo}'")
+    logger.info("🗑️ %s filas eliminadas en hoja '%s' usando columna '%s'", len(filas_a_borrar), nombre_hoja, campo)
 
 # === EJECUCIÓN ===
-print("🔍 Iniciando limpieza local de JSONs...")
+logger.info("🔍 Iniciando limpieza local de JSONs...")
 limpiar_json_local()
 
-print("🧽 Iniciando limpieza de Google Sheets...")
+logger.info("🔍 Iniciando limpieza local de JSONs...")
 borrar_fila_por_campo("Contactos", "Teléfono")
 borrar_fila_por_campo("Mensajes", "ID_Contacto")
 borrar_fila_por_campo("Estado", "chat_id")
 borrar_fila_por_campo("Citas", "ID_Contacto")
 
-print("✅ Limpieza de contacto de prueba completada.")
+logger.info("✅ Limpieza de contacto de prueba completada.")

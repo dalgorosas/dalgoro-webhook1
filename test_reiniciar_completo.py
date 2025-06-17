@@ -2,6 +2,10 @@ import os
 import json
 import gspread
 from google.oauth2.service_account import Credentials
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Autenticación
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
@@ -16,23 +20,25 @@ def obtener_hoja(nombre_hoja):
 
 # Archivos locales
 ARCHIVOS_A_ELIMINAR = ["mensajes_recientes.json", "bloqueos.json", "estado_conversaciones.json", "estado_usuarios.json"]
-ARCHIVO_A_VACIAR = r"C:\Users\grdar\Desktop\bot_dalgoro\dalgoro-webhook1\estado_usuarios.json"
+# Ruta al archivo estado_usuarios.json dentro del proyecto
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+ARCHIVO_A_VACIAR = os.path.join(BASE_DIR, "estado_usuarios.json")
 
 # Eliminar archivos innecesarios
 for archivo in ARCHIVOS_A_ELIMINAR:
     if os.path.exists(archivo):
         os.remove(archivo)
-        print(f"🧹 Archivo eliminado: {archivo}")
+        logger.info("🧹 Archivo eliminado: %s", archivo)
     else:
-        print(f"ℹ️ Archivo no encontrado (ya estaba limpio): {archivo}")
+        logger.info("ℹ️ Archivo no encontrado (ya estaba limpio): %s", archivo)
 
 # Vaciar contenido de estado_usuarios.json
 if os.path.exists(ARCHIVO_A_VACIAR):
     with open(ARCHIVO_A_VACIAR, "w", encoding="utf-8") as f:
         json.dump({}, f)
-    print(f"🧽 Archivo limpiado: {ARCHIVO_A_VACIAR}")
+    logger.info("🧽 Archivo limpiado: %s", ARCHIVO_A_VACIAR)
 else:
-    print(f"⚠️ {ARCHIVO_A_VACIAR} no existe. Creando archivo vacío...")
+    logger.warning("⚠️ %s no existe. Creando archivo vacío...", ARCHIVO_A_VACIAR)
     with open(ARCHIVO_A_VACIAR, "w", encoding="utf-8") as f:
         json.dump({}, f)
 
@@ -42,12 +48,12 @@ def borrar_hoja_completa(nombre_hoja):
     datos = hoja.get_all_values()
     if len(datos) > 1:
         hoja.delete_rows(2, len(datos))
-        print(f"🗑️ Borradas {len(datos)-1} filas en hoja: {nombre_hoja}")
+        logger.info("🗑️ Borradas %s filas en hoja: %s", len(datos)-1, nombre_hoja)
     else:
-        print(f"✅ Hoja {nombre_hoja} ya está vacía.")
+        logger.info("✅ Hoja %s ya está vacía.", nombre_hoja)
 
-print("🧼 Limpiando Google Sheets...")
+logger.info("🧼 Limpiando Google Sheets...")
 for nombre in ["Estado", "Mensajes", "Citas", "Contactos"]:
     borrar_hoja_completa(nombre)
 
-print("✅ Reinicio completo del sistema exitoso.")
+logger.info("✅ Reinicio completo del sistema exitoso.")

@@ -1,14 +1,18 @@
 import json
 import requests
 import os
+import logging
 
-# Usa variables de entorno si es posible
-INSTANCE_ID = os.getenv("GREENAPI_INSTANCE_ID", "7105252633")
-API_TOKEN = os.getenv("GREENAPI_API_TOKEN", "d2bde5d93868489e97bda6a22e40ddd9659b990c25c8422bb2")
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Usa variables de entorno
+INSTANCE_ID = os.getenv("GREENAPI_INSTANCE_ID")
+API_TOKEN = os.getenv("GREENAPI_API_TOKEN")
 
 def enviar_mensaje(numero, mensaje):
     if not mensaje:
-        print(f"⚠️ Intento de envío sin mensaje para {numero}")
+        logger.warning("⚠️ Intento de envío sin mensaje para %s", numero)
         return None
 
     url = f"https://api.green-api.com/waInstance{INSTANCE_ID}/sendMessage/{API_TOKEN}"
@@ -17,7 +21,7 @@ def enviar_mensaje(numero, mensaje):
         "message": mensaje
     }
 
-    print("📦 JSON a enviar:", json.dumps(datos, indent=2))
+    logger.debug("📦 JSON a enviar: %s", json.dumps(datos, indent=2))
 
     try:
         respuesta = requests.post(url, json=datos)
@@ -25,15 +29,15 @@ def enviar_mensaje(numero, mensaje):
 
         try:
             data = respuesta.json()
-            print(f"✅ Mensaje enviado a {numero}: {data}")
+            logger.info("✅ Mensaje enviado a %s: %s", numero, data)
             return data
         except ValueError:
-            print(f"⚠️ Respuesta no era JSON. Código: {respuesta.status_code}")
-            print(f"Texto recibido: {respuesta.text}")
+            logger.warning("⚠️ Respuesta no era JSON. Código: %s", respuesta.status_code)
+            logger.warning("Texto recibido: %s", respuesta.text)
             return None
 
     except requests.RequestException as e:
-        print(f"❌ Error al enviar mensaje a {numero}: {e}")
+        logger.error("❌ Error al enviar mensaje a %s: %s", numero, e)
         return None
 
 # 🧪 PRUEBA: Enviar mensaje

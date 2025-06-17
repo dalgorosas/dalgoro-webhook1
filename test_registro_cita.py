@@ -1,5 +1,9 @@
 from google_sheets_utils import registrar_cita_en_hoja
 import datetime
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Simulación de datos reales
 chat_id = "593984770663@c.us"
@@ -9,7 +13,7 @@ modalidad = "Oficina"
 ubicacion = "Machala"
 observaciones = "Prueba manual desde script"
 
-print("🧪 Iniciando prueba de registro de cita...")
+logger.info("🧪 Iniciando prueba de registro de cita...")
 registrar_cita_en_hoja(
     contacto=chat_id,
     fecha_cita=fecha,
@@ -18,4 +22,4 @@ registrar_cita_en_hoja(
     lugar=ubicacion,
     observaciones=observaciones
 )
-print("✅ Prueba finalizada.")
+logger.info("✅ Prueba finalizada.")

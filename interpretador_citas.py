@@ -1,14 +1,16 @@
 from datetime import datetime
 from dateutil import parser
 import re
-import pytz
 from dateparser.search import search_dates
 from lexico import EXPRESIONES_TIEMPO, EXPRESIONES_UBICACION
+from zona_horaria import ZONA_HORARIA_EC
+import logging
 
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # ✅ ZONA HORARIA DE ECUADOR
-ZONA_HORARIA_EC = pytz.timezone("America/Guayaquil")
-
+# Importado desde modulo comun
 # 🔄 Patrones extendidos
 patrones_hora_ext = [
     r"\b(?:a\s+las\s+)?(\d{1,2})(?::(\d{2}))\s*(am|pm)?\b",
@@ -79,12 +81,12 @@ def extraer_fecha_y_hora(texto):
 
     for patron in EXPRESIONES_TIEMPO["fecha"]:
         if re.search(patron, texto, re.IGNORECASE):
-            print(f"🔍 Patrón de fecha encontrado: {patron}")
+            logger.debug("🔍 Patrón de fecha encontrado: %s", patron)
             break
 
     for patron in EXPRESIONES_TIEMPO["hora"]:
         if re.search(patron, texto, re.IGNORECASE):
-            print(f"🔍 Patrón de hora encontrado: {patron}")
+            logger.debug("🔍 Patrón de hora encontrado: %s", patron)
             break
 
     # Primer intento con dateparser
@@ -147,8 +149,8 @@ def extraer_fecha_y_hora(texto):
             "hora": hora_detectada or "09:00",
             "ubicacion": ubicacion
         }
-        print("🧪 [DEBUG - cita detectada con fallback]", texto, "→", resultado)
+        logger.debug("🔍 Patrón de hora encontrado: %s", patron)
         return resultado
 
-    print("🧪 [DEBUG - sin cita detectable]", texto, "→ None")
+    logger.debug("🧪 [DEBUG - sin cita detectable] %s → None", texto)
     return None

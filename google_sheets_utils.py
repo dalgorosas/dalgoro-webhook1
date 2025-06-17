@@ -3,10 +3,11 @@ import json
 import gspread
 from datetime import datetime, timedelta
 from oauth2client.service_account import ServiceAccountCredentials
-import pytz
-from datetime import timezone, timedelta
-ZONA_HORARIA_EC = timezone(timedelta(hours=-5))
+from zona_horaria import ZONA_HORARIA_EC
+import logging
 
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Ámbitos de acceso para Google Sheets y Drive
 SCOPE = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
@@ -42,10 +43,10 @@ def guardar_estado_en_sheets(chat_id, estado):
             fila_nueva["ultima_interaccion"],
             fila_nueva["ultimo_mensaje_id"]
         ]])
-        print(f"🔁 Estado actualizado en fila {idx} de Sheets.")
+        logger.info("🔁 Estado actualizado en fila %s de Sheets.", idx)
     else:
         hoja.append_row(list(fila_nueva.values()))
-        print(f"➕ Estado nuevo registrado en Sheets para {chat_id}.")
+        logger.info("➕ Estado nuevo registrado en Sheets para %s.", chat_id)
 
 def obtener_credenciales():
     try:
@@ -55,10 +56,10 @@ def obtener_credenciales():
             cred_dict = json.loads(cred_json)
             return ServiceAccountCredentials.from_json_keyfile_dict(cred_dict, SCOPE)
     except Exception as e:
-        print(f"⚠️ Variable de entorno no válida. Motivo: {e}")
+        logger.warning("⚠️ Variable de entorno no válida. Motivo: %s", e)
 
     # INTENTO 2: modo local con archivo JSON
-    print("🗂️ Usando archivo local de credenciales.")
+    logger.info("🗂️ Usando archivo local de credenciales.")
     with open("dalgoro-api-ea1fa305d0ca.json", "r", encoding="utf-8") as f:
         cred_dict = json.load(f)
     return ServiceAccountCredentials.from_json_keyfile_dict(cred_dict, SCOPE)
@@ -87,7 +88,7 @@ def cargar_estados_desde_sheets():
             "ultima_interaccion": fila.get("ultima_interaccion", ""),
             "ultimo_mensaje_id": fila.get("ultimo_mensaje_id", "")
         })
-    print(f"✅ Se cargaron {len(estados)} estados desde Sheets.")
+    logger.info("✅ Se cargaron %s estados desde Sheets.", len(estados))
     return estados
 
 class SheetsManager:
@@ -113,28 +114,8 @@ class SheetsManager:
             ])
             return True
         except Exception as e:
-            print("Error al registrar mensaje:", e)
+            logger.error("Error al registrar mensaje: %s", e)
             return False
-
-def registrar_mensaje(chat_id, mensaje, tipo, canal):
-    from datetime import datetime
-    hoja = conectar_hoja("Mensajes")
-    ahora = datetime.now(ZONA_HORARIA_EC).strftime("%Y-%m-%d %H:%M:%S")  # ✅ Correcto
-    hoja.append_row([
-        chat_id,    # A - Teléfono
-        ahora,      # B - Fecha
-        tipo,       # C - Tipo
-        canal,      # D - Canal
-        mensaje,    # E - Mensaje
-    ])
-
-    def get_analytics_data(self):
-        mensajes = self.mensajes.get_all_records()
-        return {
-            "total_mensajes": len(mensajes),
-            "enviados": sum(1 for m in mensajes if m["Tipo"] == "Enviado"),
-            "recibidos": sum(1 for m in mensajes if m["Tipo"] == "Recibido")
-        }
 
 # Instancia global
 sheets_manager = SheetsManager()
@@ -143,7 +124,7 @@ sheets_manager = SheetsManager()
 # FUNCIONES PARA FOLLOW-UP AUTOMÁTICO
 # ----------------------------
 
-ZONA_EC = pytz.timezone("America/Guayaquil")
+ZONA_EC = ZONA_HORARIA_EC
 
 def obtener_contactos_activos():
     hoja = conectar_hoja("Mensajes")
@@ -207,16 +188,16 @@ def registrar_cita_en_hoja(contacto, fecha_cita, hora, modalidad, lugar, observa
             hora_fila = str(fila.get("hora", "")).strip()
 
             if id_c == contacto and fecha == fecha_cita and hora_fila == hora:
-                print(f"⚠️ Ya existe una cita para {contacto} en {fecha_cita} a las {hora}.")
+                logger.info("➡️ Intentando registrar cita: %s, %s, %s, %s, %s", contacto, fecha_cita, hora, modalidad, lugar)
                 return
 
         nueva_fila = [contacto, fecha_cita, hora, modalidad, lugar, observaciones]
-        print("📝 Registrando nueva fila:", nueva_fila)
+        logger.info("📝 Registrando nueva fila: %s", nueva_fila)
         hoja.append_row(nueva_fila)
-        print(f"✅ Cita registrada para {contacto} en {fecha_cita} a las {hora}.")
+        logger.info("✅ Cita registrada para %s en %s a las %s.", contacto, fecha_cita, hora)
 
     except Exception as e:
-        print(f"❌ Error al registrar cita en Google Sheets: {e}")
+        logger.error("❌ Error al registrar cita en Google Sheets: %s", e)
 
 def actualizar_estado_cita(contacto, nuevo_estado, observaciones_adicionales=""):
     """
@@ -233,10 +214,10 @@ def actualizar_estado_cita(contacto, nuevo_estado, observaciones_adicionales="")
         if fila[0] == contacto:
             hoja.update_cell(idx + 1, 6, nuevo_estado)  # Columna F = Confirmada
             hoja.update_cell(idx + 1, 7, observaciones_adicionales)  # Columna G = Observaciones
-            print(f"✅ Estado de la cita para {contacto} actualizado a '{nuevo_estado}'")
+            logger.info("✅ Estado de la cita para %s actualizado a '%s'", contacto, nuevo_estado)
             return
 
-    print(f"⚠️ No se encontró cita activa para {contacto}.")
+    logger.warning("⚠️ No se encontró cita activa para %s.", contacto)
 
 def cargar_estado_desde_sheets(contacto_id):
     hoja = conectar_hoja("Contactos")

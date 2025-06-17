@@ -1,6 +1,10 @@
 
 import os
 from datetime import datetime
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Ruta al archivo local de estado
 ESTADO_PATH = "estado_usuarios.json"
@@ -8,9 +12,9 @@ ESTADO_PATH = "estado_usuarios.json"
 # Paso 1: Borrar el estado local (si existe)
 if os.path.exists(ESTADO_PATH):
     os.remove(ESTADO_PATH)
-    print("🗑️ Archivo de estado local eliminado para simular pérdida de memoria.")
+    logger.info("🗑️ Archivo de estado local eliminado para simular pérdida de memoria.")
 else:
-    print("⚠️ El archivo estado_usuarios.json no existe. Continuando igual...")
+    logger.warning("⚠️ El archivo estado_usuarios.json no existe. Continuando igual...")
 
 # Paso 2: Simular recepción de mensaje desde WhatsApp
 from gestor_conversacion import manejar_conversacion
@@ -23,5 +27,5 @@ ultima_interaccion = datetime.now()
 
 # Ejecutar el flujo
 respuesta = manejar_conversacion(chat_id, mensaje, actividad_detectada, ultima_interaccion)
-print("🤖 Respuesta del bot:")
-print(respuesta)
+logger.info("🤖 Respuesta del bot:")
+logger.info(respuesta)

@@ -1,13 +1,13 @@
 # follow_up_manager.py
-import pytz
 from datetime import datetime, timedelta
+from zona_horaria import ZONA_HORARIA_EC
 from google_sheets_utils import (
     conectar_hoja,
     registrar_mensaje,
     actualizar_estado_chat
 )
 
-ZONA_EC = pytz.timezone("America/Guayaquil")
+ZONA_EC = ZONA_HORARIA_EC
 
 MENSAJES_SEGUIMIENTO = {
     "seguimiento_1": "¡Hola! Solo queríamos asegurarnos de que viste nuestro mensaje anterior. ¿Te interesa que te ayudemos con tus necesidades ambientales?",
@@ -31,8 +31,8 @@ def gestionar_seguimiento(chat_id):
     except:
         return
 
-    fecha_interaccion = ZONA_EC.localize(fecha_interaccion)
-    ahora = datetime.now(ZONA_EC)
+    fecha_interaccion = fecha_interaccion.replace(tzinfo=ZONA_HORARIA_EC)
+    ahora = datetime.now(ZONA_HORARIA_EC)
     minutos = (ahora - fecha_interaccion).total_seconds() / 60
 
     if estado == "activo" and minutos >= 30:

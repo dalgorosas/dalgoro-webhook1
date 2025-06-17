@@ -1,11 +1,15 @@
 import json
 import os
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 RUTA_JSON = "dalgoro-webhook1\\estado_usuarios.json"
 
 def cargar_estados():
     if not os.path.exists(RUTA_JSON):
-        print("❌ No existe el archivo estado_usuarios.json")
+        logger.error("❌ No existe el archivo estado_usuarios.json")
         return {}
 
     with open(RUTA_JSON, "r", encoding="utf-8") as f:
@@ -13,31 +17,31 @@ def cargar_estados():
             data = json.load(f)
             return data.get("_default", {})
         except Exception as e:
-            print(f"❌ Error al leer el archivo: {e}")
+            logger.error("❌ Error al leer el archivo: %s", e)
             return {}
 
 def guardar_estados(registros):
     with open(RUTA_JSON, "w", encoding="utf-8") as f:
         json.dump({"_default": registros}, f, indent=2)
-        print("✅ Archivo actualizado correctamente.")
+        logger.info("✅ Archivo actualizado correctamente.")
 
 def listar_estados(registros):
     if not registros:
-        print("✅ No hay registros actualmente.")
+        logger.info("✅ No hay registros actualmente.")
         return
 
-    print(f"📊 Hay {len(registros)} registros:")
+    logger.info("📊 Hay %s registros:", len(registros))
     for k, estado in registros.items():
-        print(f" - ID interno: {k} | chat_id: {estado.get('chat_id')} | etapa: {estado.get('etapa')} | actividad: {estado.get('actividad')}")
+        logger.info(" - ID interno: %s | chat_id: %s | etapa: %s | actividad: %s", k, estado.get('chat_id'), estado.get('etapa'), estado.get('actividad'))
 
 def eliminar_chat_id(registros, chat_id_objetivo):
     claves_a_eliminar = [k for k, e in registros.items() if e.get("chat_id") == chat_id_objetivo]
     if not claves_a_eliminar:
-        print("❌ No se encontró ese chat_id en los registros.")
+        logger.error("❌ No se encontró ese chat_id en los registros.")
         return registros
 
     for k in claves_a_eliminar:
-        print(f"🗑 Eliminando entrada: {registros[k]}")
+        logger.info("🗑 Eliminando entrada: %s", registros[k])
         registros.pop(k)
 
     return registros
