@@ -146,16 +146,6 @@ def determinar_siguiente_etapa(estado_actual, mensaje):
             return "aclaracion_permiso_si", "esperando_cita"
         else:
             return "aclaracion_permiso_si", "esperando_cita"
-
-    elif etapa == "aclaracion_permiso_si":
-        clasificacion = clasificar_permiso(mensaje)
-        if clasificacion == "si":
-            return "cierre", "esperando_cita"
-
-        elif any(x in mensaje.lower() for x in ["agenda", "visita", "quiero", "cita", "coordinar"]):
-            return "cierre", "esperando_cita"
-        else:
-            return "aclaracion_permiso_si", "esperando_cita"
     
     elif etapa == "permiso_no":
         clasificacion = clasificar_permiso(mensaje)
@@ -291,14 +281,14 @@ def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual):
             logger.error("❌ Flujo inválido: intento de salto de '%s' a '%s' en %s", etapa_actual, nueva_etapa, actividad_actual)
             return "🙏 Gracias por su mensaje. En breve le responderemos personalmente para coordinar su cita. 🌱"
 
-                # ✅ Si todo está correcto, actualizar estado (permitiendo reentrar en cierre o aclaración)
+        # ✅ Si todo está correcto, actualizar estado (permitiendo reentrar en cierre o aclaración)
         if (nueva_etapa != estado.get("etapa")) or (nueva_fase != estado.get("fase")) or (nueva_etapa in ["cierre", "aclaracion_cierre"]):
             logger.debug("➡️ Cambio de etapa: %s → %s", estado.get('etapa'), nueva_etapa)
             estado["etapa"] = nueva_etapa
-            estado["fase"] = nueva_fase
-
-        # ✅ Intentar detectar y registrar cita solo en cierre o aclaracion_cierre
-        if nueva_etapa in ["cierre", "aclaracion_cierre"]:
+            estado["fase"] = nueva_fase      
+        
+        # 📌 Detectar y registrar cita SOLO si YA estamos en etapa 'cierre' o 'aclaracion_cierre'
+        if estado["etapa"] in ["cierre", "aclaracion_cierre"]:
             cita = extraer_fecha_y_hora(mensaje)
 
             if isinstance(cita, dict) and "fecha" in cita and "hora" in cita:
