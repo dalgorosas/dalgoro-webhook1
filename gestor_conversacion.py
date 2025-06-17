@@ -296,10 +296,26 @@ def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual):
 
         # ✅ Generar respuesta inmediata para etapas sin cita
         if estado["etapa"] in ["permiso_si", "permiso_no"]:
-            respuesta = obtener_respuesta_por_actividad(estado["actividad"], estado["etapa"])
-            if not respuesta:
-                respuesta = "Gracias por compartir la información. Para coordinar correctamente su cita, ¿podría confirmarnos por favor el *día*, la *hora* aproximada y si desea que lo visitemos en *finca u oficina*? Esta evaluación es sin costo 🌱"
-                logger.warning("⚠️ No se encontró respuesta para etapa %s de actividad %s", estado["etapa"], estado["actividad"])
+            permiso_clasificado = clasificar_permiso(mensaje)
+
+            if permiso_clasificado == "permiso_si" and estado["etapa"] == "permiso_si":
+                estado["etapa"] = "cierre"
+            elif permiso_clasificado == "permiso_no" and estado["etapa"] == "permiso_no":
+                estado["etapa"] = "cierre"
+            elif permiso_clasificado == "permiso_si":
+                estado["etapa"] = "aclaracion_permiso_si"
+            elif permiso_clasificado == "permiso_no":
+                estado["etapa"] = "aclaracion_permiso_no"
+            else:
+                # No fue claro. Enviar a aclaración correspondiente
+                if estado["etapa"] == "permiso_si":
+                    estado["etapa"] = "aclaracion_permiso_si"
+                elif estado["etapa"] == "permiso_no":
+                    estado["etapa"] = "aclaracion_permiso_no"
+
+            respuesta = obtener_respuesta_por_actividad(estado["actividad"], estado["etapa"]) or \
+                "Gracias por compartir la información. ¿Podría confirmarnos si desea que lo visitemos en *finca* o en *oficina*? Esta evaluación es sin costo 🌱"
+
             estado["ultima_interaccion"] = fecha_actual.isoformat()
             estado["chat_id"] = chat_id
             guardar_estado(chat_id, estado)
@@ -349,8 +365,19 @@ def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual):
                 registrar_mensaje(chat_id, mensaje)
                 return respuesta
 
-            # ✅ Cita válida
-            registrar_cita(chat_id, cita["fecha"], cita["hora"], cita.get("ubicacion"))
+            modalidad = "oficina" if "oficina" in mensaje.lower() else "finca" if "finca" in mensaje.lower() else ""
+            lugar = cita.get("ubicacion", "")
+            observaciones = f"Mensaje original: {mensaje}"
+
+            registrar_cita_en_hoja(
+                contacto=chat_id,
+                fecha_cita=cita["fecha"],
+                hora=cita["hora"],
+                modalidad=modalidad,
+                lugar=lugar,
+                observaciones=observaciones
+        )
+
             estado["etapa"] = "agradecimiento"
             estado["fase"] = "cita_registrada"
             estado["ultima_interaccion"] = fecha_actual.isoformat()
