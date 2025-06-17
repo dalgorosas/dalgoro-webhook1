@@ -297,6 +297,9 @@ def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual):
         # ✅ Generar respuesta inmediata para etapas sin cita
         if estado["etapa"] in ["permiso_si", "permiso_no"]:
             respuesta = obtener_respuesta_por_actividad(estado["actividad"], estado["etapa"])
+            if not respuesta:
+                respuesta = "Gracias por compartir la información. Para coordinar correctamente su cita, ¿podría confirmarnos por favor el *día*, la *hora* aproximada y si desea que lo visitemos en *finca u oficina*? Esta evaluación es sin costo 🌱"
+                logger.warning("⚠️ No se encontró respuesta para etapa %s de actividad %s", estado["etapa"], estado["actividad"])
             estado["ultima_interaccion"] = fecha_actual.isoformat()
             estado["chat_id"] = chat_id
             guardar_estado(chat_id, estado)
