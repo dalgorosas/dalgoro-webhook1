@@ -1,15 +1,9 @@
 from datetime import datetime
 from threading import Lock
 import time
-from dateutil.parser import isoparse
 
-from enviador import enviar_mensaje
 from estado_storage import guardar_estado, obtener_estado_seguro
 from interpretador_citas import extraer_fecha_y_hora
-from reinicio_flujo import debe_reiniciar_flujo
-from respuestas_finales import obtener_mensaje_agradecimiento
-from seguimiento_silencio import manejar_seguimiento
-from google_sheets_utils import guardar_estado_en_sheets
 from control_antirrepeticion import mensaje_duplicado, registrar_mensaje, bloqueo_activo, activar_bloqueo
 from google_sheets_utils import registrar_cita_en_hoja
 from respuestas_por_actividad import (
@@ -19,11 +13,8 @@ from respuestas_por_actividad import (
     FLUJOS_POR_ACTIVIDAD
 )
 from respuestas_por_actividad import NEGATIVOS_FUERTES
-from respuestas_por_actividad import contiene_permiso_si, contiene_permiso_no
 from bot import enviar_mensaje  # Asegúrate que esta importación está activa arriba
-from dateutil.parser import parse as parse_fecha
 from respuestas_por_actividad import clasificar_permiso  # asegúrate de importar
-from zona_horaria import ZONA_HORARIA_EC
 import logging
 
 logging.basicConfig(level=logging.INFO)
@@ -70,6 +61,8 @@ def registrar_cita(chat_id, fecha, hora, ubicacion=None):
     ubicacion_segura = ubicacion or ""
     modalidad = "Finca" if "finca" in ubicacion_segura.lower() else "Oficina"
 
+    # ✅ Notificar al número personal del Ing. Darwin
+    numero_personal = formatear_chat_id("593984770663")
     try:
         registrar_cita_en_hoja(
             contacto=chat_id,
@@ -79,9 +72,6 @@ def registrar_cita(chat_id, fecha, hora, ubicacion=None):
             lugar=ubicacion_segura or "No especificado",
             observaciones=""
         )
-
-        # ✅ Notificar al número personal del Ing. Darwin
-        numero_personal = formatear_chat_id("593984770663")
 
         mensaje_interno = (
             f"📢 *Nueva cita registrada:*\n"
@@ -376,6 +366,7 @@ def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual):
     except Exception as e:
         logger.exception("❌ Error crítico en manejar_conversacion con %s: %s", chat_id, e)
         return "Gracias por compartir la información. Para coordinar correctamente su cita, ¿podría confirmarnos por favor el *día*, la *hora* aproximada y si desea que lo visitemos en *finca u oficina*? Esta evaluación es sin costo 🌱"
+respuesta = None
 
 def reiniciar_conversacion(chat_id):
     if chat_id in estado_conversaciones:
@@ -385,7 +376,3 @@ def reiniciar_conversacion(chat_id):
     if chat_id in locks_chat:
         del locks_chat[chat_id]
     return f"🔄 Conversación con {chat_id} reiniciada exitosamente."
-
-def manejar_seguimiento(chat_id, estado):
-    # Simulación para pruebas, no hace nada real
-    return None

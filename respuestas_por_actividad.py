@@ -1,4 +1,3 @@
-import re
 
 RESPUESTA_INICIAL = """
 👋 ¡Hola! Le saluda *DALGORO - Innovación y Sostenibilidad* 🌿

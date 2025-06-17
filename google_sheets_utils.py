@@ -2,7 +2,7 @@ import os
 import json
 import sys
 import gspread
-from datetime import datetime, timedelta
+from datetime import datetime
 from oauth2client.service_account import ServiceAccountCredentials
 from zona_horaria import ZONA_HORARIA_EC
 import logging
@@ -63,6 +63,10 @@ def obtener_credenciales():
     """
 
     cred_json = os.getenv("GOOGLE_CREDENTIALS_JSON")
+    if not cred_json:
+        logger.error("❌ GOOGLE_CREDENTIALS_JSON no está definida.")
+        raise FileNotFoundError("GOOGLE_CREDENTIALS_JSON no está definida.")
+
     if cred_json:
         try:
             if os.path.isfile(cred_json):

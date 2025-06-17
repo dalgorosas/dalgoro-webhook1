@@ -5,10 +5,9 @@ from config import Config
 from datetime import datetime
 from bot import enviar_mensaje
 from estado_storage import mensaje_ya_procesado, registrar_mensaje_procesado
-import requests
 import logging
 import json
-from mensaje_ids import cargar_ids, guardar_ids
+from mensaje_ids import cargar_ids
 from zona_horaria import ZONA_HORARIA_EC
 
 mensajes_recientes = cargar_ids()

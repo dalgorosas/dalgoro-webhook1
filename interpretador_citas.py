@@ -1,5 +1,4 @@
 from datetime import datetime
-from dateutil import parser
 import re
 from dateparser.search import search_dates
 from lexico import EXPRESIONES_TIEMPO, EXPRESIONES_UBICACION

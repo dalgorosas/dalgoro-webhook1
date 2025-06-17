@@ -5,7 +5,8 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-RUTA_JSON = "dalgoro-webhook1\\estado_usuarios.json"
+BASE_DIR = os.path.dirname(__file__)
+RUTA_JSON = os.path.join("dalgoro-webhook1", "estado_usuarios.json")
 
 def cargar_estados():
     if not os.path.exists(RUTA_JSON):

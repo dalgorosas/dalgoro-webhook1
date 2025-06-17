@@ -34,7 +34,7 @@ def cargar_db():
                     logger.error("❌ Archivo corrupto (lista). Eliminando y regenerando...")
                     os.remove(db_path)
                     return cargar_db()
-            except Exception as e:
+            except Exception:
                 logger.error("❌ Archivo ilegible. Eliminando y regenerando...")
                 os.remove(db_path)
                 return cargar_db()

@@ -1,5 +1,5 @@
 # follow_up_manager.py
-from datetime import datetime, timedelta
+from datetime import datetime
 from zona_horaria import ZONA_HORARIA_EC
 from google_sheets_utils import (
     conectar_hoja,
