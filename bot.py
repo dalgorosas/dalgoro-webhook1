@@ -7,8 +7,8 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Usa variables de entorno
-INSTANCE_ID = os.getenv("GREENAPI_INSTANCE_ID")
-API_TOKEN = os.getenv("GREENAPI_API_TOKEN")
+INSTANCE_ID = os.getenv("7105252633")
+API_TOKEN = os.getenv("67c2dece454947aba9d8d44daca573ccfa41c248c0424464a8")
 
 def enviar_mensaje(numero, mensaje):
     if not mensaje:
