@@ -150,7 +150,8 @@ def determinar_siguiente_etapa(estado_actual, mensaje):
     elif etapa == "aclaracion_permiso_si":
         clasificacion = clasificar_permiso(mensaje)
         if clasificacion == "si":
-            return "permiso_si", "confirmado"
+            return "cierre", "esperando_cita"
+
         elif any(x in mensaje.lower() for x in ["agenda", "visita", "quiero", "cita", "coordinar"]):
             return "cierre", "esperando_cita"
         else:
@@ -171,6 +172,8 @@ def determinar_siguiente_etapa(estado_actual, mensaje):
         clasificacion = clasificar_permiso(mensaje)
         if clasificacion == "no":
             return "permiso_no", "confirmado"
+        elif clasificacion == "si":
+            return "cierre", "esperando_cita"
         elif any(x in mensaje.lower() for x in ["agenda", "visita", "quiero", "cita", "coordinar"]):
             return "cierre", "esperando_cita"
         else:
