@@ -1,5 +1,6 @@
 import os
 import json
+import sys
 import gspread
 from datetime import datetime, timedelta
 from oauth2client.service_account import ServiceAccountCredentials
@@ -83,9 +84,11 @@ def obtener_credenciales():
     except Exception as e:
         logger.error("❌ Error al cargar credenciales desde %s: %s", archivo_local, e)
 
-    raise FileNotFoundError(
-        "Credenciales de Google no encontradas. Define GOOGLE_CREDENTIALS_JSON o coloca el archivo '%s' en el proyecto." % archivo_local
+    mensaje = (
+        "Credenciales de Google no encontradas. Define la variable de entorno GOOGLE_CREDENTIALS_JSON o coloca el archivo '%s' en la raíz del proyecto." % archivo_local
     )
+    logger.error(mensaje)
+    sys.exit(mensaje)
 
 def conectar_hoja(nombre_hoja):
     creds = obtener_credenciales()
