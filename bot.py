@@ -11,6 +11,9 @@ INSTANCE_ID = os.getenv("GREENAPI_INSTANCE_ID")
 API_TOKEN = os.getenv("GREENAPI_API_TOKEN")
 
 def enviar_mensaje(numero, mensaje):
+    if not INSTANCE_ID or not API_TOKEN:
+        logger.error("GREENAPI credentials not configured")
+        return None
     if not mensaje:
         logger.warning("⚠️ Intento de envío sin mensaje para %s", numero)
         return None

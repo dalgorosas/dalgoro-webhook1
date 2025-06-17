@@ -17,8 +17,11 @@ def agregar_fila_a_hoja(nombre_hoja, fila):
     hoja = conectar_hoja(nombre_hoja)
     hoja.append_row(fila)
 
-# ID del Google Sheet (reemplaza con tu ID real)
-SHEET_ID = "1RggJz98tnR86fo_AspwLWUVOIABn6vVrvojAkfQAqHc"
+# ID del Google Sheet
+# Puede definirse mediante la variable de entorno ``SHEET_ID``. Si se
+# establece ``GOOGLE_SHEET_URL`` se usará directamente esa URL.
+SHEET_ID = os.getenv("SHEET_ID", "1RggJz98tnR86fo_AspwLWUVOIABn6vVrvojAkfQAqHc")
+GOOGLE_SHEET_URL = os.getenv("GOOGLE_SHEET_URL")
 
 def guardar_estado_en_sheets(chat_id, estado):
     hoja = conectar_hoja("Estado")
@@ -94,8 +97,9 @@ def conectar_hoja(nombre_hoja):
     creds = obtener_credenciales()
     cliente = gspread.authorize(creds)
 
-    # Reemplaza esta URL con la URL real de tu Google Sheet
-    url_hoja = "https://docs.google.com/spreadsheets/d/1RggJz98tnR86fo_AspwLWUVOIABn6vVrvojAkfQAqHc/edit#gid=0"
+    # URL de la hoja de cálculo. Si se define ``GOOGLE_SHEET_URL`` se utiliza
+    # directamente; de lo contrario se construye a partir de ``SHEET_ID``.
+    url_hoja = GOOGLE_SHEET_URL or f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/edit#gid=0"
 
     hoja_gspread = cliente.open_by_url(url_hoja).worksheet(nombre_hoja)
     return hoja_gspread

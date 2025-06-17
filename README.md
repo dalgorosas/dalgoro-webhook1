@@ -9,8 +9,11 @@ Servidor Flask para responder mensajes de WhatsApp mediante Green API y registra
    pip install -r requirements.txt
    ```
 2. **Configurar variables de entorno**
+   Copia el archivo `.env.example` a `.env` y completa cada valor con tus
+   credenciales reales.
    - `GREENAPI_INSTANCE_ID` y `GREENAPI_API_TOKEN`: credenciales para la API de Green API.
    - `GOOGLE_CREDENTIALS_JSON`: ruta al archivo JSON de la cuenta de servicio de Google o el JSON en formato de cadena.
+   - `SHEET_ID` o `GOOGLE_SHEET_URL`: identificador o URL completa de la hoja de cálculo de Google Sheets donde se registrarán los datos.
 
    En plataformas como **Render**, estas variables se definen en el apartado **Environment** de la configuración del servicio.
 3. **Ejecutar la aplicación**
@@ -25,6 +28,7 @@ Servidor Flask para responder mensajes de WhatsApp mediante Green API y registra
 2. Crea una cuenta de servicio, descarga su archivo JSON y comparte tu hoja de cálculo con el correo de dicha cuenta.
 3. Guarda el archivo en la raíz del proyecto con el nombre `dalgoro-api-ea1fa305d0ca.json` **o**
    define la variable `GOOGLE_CREDENTIALS_JSON` con la ruta al archivo o con el JSON completo.
+4. Define `SHEET_ID` con el identificador de tu hoja de cálculo o `GOOGLE_SHEET_URL` con la URL completa.
 
 ## Scripts de prueba
 
