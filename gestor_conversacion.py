@@ -13,9 +13,7 @@ from respuestas_por_actividad import (
     FLUJOS_POR_ACTIVIDAD
 )
 from respuestas_por_actividad import NEGATIVOS_FUERTES
-from bot import enviar_mensaje  # Asegúrate que esta importación está activa arriba
 from respuestas_por_actividad import clasificar_permiso  # asegúrate de importar
-from correo_utils import enviar_correo_asunto  # asegúrate de importar esto
 import logging
 
 logging.basicConfig(level=logging.INFO)
@@ -32,38 +30,15 @@ locks_chat = {}
 # Simulación de base de datos en memoria
 estado_conversaciones = {}
 
-def enviar_alerta_a_personal(chat_id, mensaje, actividad, etapa, fase, fecha, nombre="(sin nombre)"):
-    try:
-        # ✅ Asegura que no se duplique el sufijo @c.us
-        numero_personal = formatear_chat_id("593984770663")
-
-        from dateutil.parser import parse as parse_fecha
-        fecha_obj = fecha if isinstance(fecha, datetime) else parse_fecha(str(fecha))
-
-        texto = (
-            f"⚠️ *Cita NO registrada automáticamente*\n"
-            f"📞 Cliente: {chat_id.replace('@c.us', '')}\n"
-            f"🏷 Actividad: {actividad or '(sin definir)'}\n"
-            f"🔄 Etapa/Fase: {etapa} / {fase}\n"
-            f"📬 *Mensaje recibido:* _{mensaje}_\n"
-            f"🕒 {fecha_obj.strftime('%Y-%m-%d %H:%M')} - Requiere revisión manual."
-        )
-
-        logger.debug("📦 JSON a enviar:\nnumero_personal=%s\ntexto=%s", numero_personal, texto)
-        enviar_mensaje(numero_personal, texto)
-        logger.info("📨 Notificación interna enviada por cita no registrada.")
-
-    except Exception as e:
-        logger.warning("⚠️ No se pudo enviar alerta personalizada: %s", e)
-
 def registrar_cita(chat_id, fecha, hora, ubicacion=None, mensaje="", estado=None):
     logger.info("🗕️ Se registró una cita para %s: {'fecha': '%s', 'hora': '%s', 'ubicacion': '%s'}", chat_id, fecha, hora, ubicacion)
 
     ubicacion_segura = ubicacion or ""
     modalidad = "Finca" if "finca" in ubicacion_segura.lower() else "Oficina"
 
-    # ✅ Notificar al número personal del Ing. Darwin
-    numero_personal = formatear_chat_id("593984770663")
+    # ✅ Usamos primero el mensaje recibido directamente, luego el del estado, y nunca dejamos vacío
+    mensaje_original = mensaje or estado.get("ultimo_mensaje_procesado", "(sin mensaje)")
+
     try:
         registrar_cita_en_hoja(
             contacto=chat_id,
@@ -71,53 +46,11 @@ def registrar_cita(chat_id, fecha, hora, ubicacion=None, mensaje="", estado=None
             hora=hora,
             modalidad=modalidad,
             lugar=ubicacion_segura or "No especificado",
-            observaciones=""
+            observaciones=mensaje_original
         )
-
-        actividad = estado.get("actividad", "Otros")
-        actividad = actividad.capitalize()
-
-        numero_limpio = chat_id.replace('@c.us', '')
-        link_whatsapp = f"https://wa.me/{numero_limpio}"
-        mensaje_original = estado.get("ultimo_mensaje_procesado", "")
-        modalidad_texto = "Visita en finca" if "finca" in ubicacion_segura.lower() else "Reunión en oficina"
-
-        mensaje_interno = (
-            f"📢 *Nueva cita registrada:*\n"
-            f"📅 *Fecha:* {fecha}\n"
-            f"🕒 *Hora:* {hora}\n"
-            f"📍 *Lugar:* {ubicacion_segura or 'No especificado'}\n"
-            f"🏷 *Actividad:* {actividad}\n"
-            f"🏡 *Modalidad:* {modalidad_texto}\n"
-            f"📞 *Cliente:* +{numero_limpio} → [Escribir por WhatsApp]({link_whatsapp})\n"
-            f"📝 *Observaciones:* {mensaje_original or '(sin mensaje)'}\n"
-            f"✉️ Mensaje automático para coordinación inmediata."
-        )
-
-        # ✅ Mensaje de prueba extra para verificar envío
-        mensaje_prueba = "✅ Prueba técnica: confirmación de que el sistema llegó a esta parte. Si ves esto, Green API está funcionando correctamente."
-
-        logger.debug("📦 Enviando mensaje de prueba a %s", numero_personal)
-        enviar_mensaje(numero_personal, mensaje_prueba)
-
-        logger.debug("📦 Enviando mensaje completo a %s:\n%s", numero_personal, mensaje_interno)
-        enviar_mensaje(numero_personal, mensaje_interno)
-
+        logger.info("📄 Cita registrada correctamente en Google Sheets.")
     except Exception as e:
-        logger.error("❌ Error al registrar o notificar cita: %s", e)
-        mensaje_falla = (
-            f"🚨 *ERROR al guardar o notificar cita*\n"
-            f"📞 Cliente: {chat_id.replace('@c.us', '')}\n"
-            f"📅 Fecha: {fecha}\n"
-            f"🕒 Hora: {hora}\n"
-            f"📍 Ubicación: {ubicacion_segura or 'No especificado'}\n"
-            f"⚠️ Detalle técnico: {str(e)}"
-        )
-        try:
-            enviar_mensaje(numero_personal, mensaje_falla)
-        except Exception as ex:
-            logger.error("❌ Falló también el envío por WhatsApp: %s", ex)
-            enviar_correo_asunto(mensaje_falla)
+        logger.error("❌ Error al registrar cita en hoja de cálculo: %s", e)
 
 def formatear_respuesta(respuesta):
     if isinstance(respuesta, str):

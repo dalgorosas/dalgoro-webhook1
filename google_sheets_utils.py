@@ -211,6 +211,8 @@ def registrar_mensaje(chat_id, mensaje, tipo, canal):
 
 def registrar_cita_en_hoja(contacto, fecha_cita, hora, modalidad, lugar, observaciones):
     print(f"➡️ Intentando registrar cita: {contacto}, {fecha_cita}, {hora}, {modalidad}, {lugar}")
+    print("📦 Observaciones a registrar:", observaciones)  # Diagnóstico
+
     try:
         hoja = conectar_hoja("Citas")
         filas = hoja.get_all_records()
@@ -222,7 +224,7 @@ def registrar_cita_en_hoja(contacto, fecha_cita, hora, modalidad, lugar, observa
             hora_fila = str(fila.get("hora", "")).strip()
 
             if id_c == contacto and fecha == fecha_cita and hora_fila == hora:
-                logger.info("➡️ Intentando registrar cita: %s, %s, %s, %s, %s", contacto, fecha_cita, hora, modalidad, lugar)
+                logger.info("➡️ Cita duplicada detectada. No se registrará de nuevo.")
                 return
 
         nueva_fila = [contacto, fecha_cita, hora, modalidad, lugar, observaciones]

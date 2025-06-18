@@ -1,20 +1,27 @@
 import smtplib
-from email.message import EmailMessage
-from config_email import EMAIL_REMITENTE, EMAIL_CONTRASENA, EMAIL_DESTINATARIO, SMTP_SERVIDOR, SMTP_PUERTO
+from email.mime.text import MIMEText
+from config_email import EMAIL_REMITENTE, EMAIL_CONTRASENA, EMAIL_DESTINATARIO, SMTP_SERVIDOR
 
-def enviar_correo_asunto(mensaje, asunto="🚨 Fallo en notificación por WhatsApp"):
+SMTP_PUERTO = 587  # Cambiamos aquí también si no lo has hecho aún
+
+def enviar_correo_fallo_whatsapp():
+    asunto = "⚠️ FALLO EN ENVÍO DE WHATSAPP"
+    cuerpo = "Se ha producido un error al intentar enviar un mensaje por WhatsApp. Por favor, revisa el sistema."
+
+    mensaje = MIMEText(cuerpo, "plain")
+    mensaje["Subject"] = asunto
+    mensaje["From"] = EMAIL_REMITENTE
+    mensaje["To"] = EMAIL_DESTINATARIO
+
     try:
-        email = EmailMessage()
-        email['From'] = EMAIL_REMITENTE
-        email['To'] = EMAIL_DESTINATARIO
-        email['Subject'] = asunto
-        email.set_content(mensaje)
-
-        with smtplib.SMTP(SMTP_SERVIDOR, SMTP_PUERTO) as smtp:
-            smtp.starttls()
-            smtp.login(EMAIL_REMITENTE, EMAIL_CONTRASENA)
-            smtp.send_message(email)
-
+        with smtplib.SMTP(SMTP_SERVIDOR, SMTP_PUERTO) as servidor:
+            servidor.ehlo()
+            servidor.starttls()
+            servidor.login(EMAIL_REMITENTE, EMAIL_CONTRASENA)
+            servidor.send_message(mensaje)
         print("✅ Correo enviado correctamente.")
     except Exception as e:
-        print(f"❌ Error al enviar correo: {e}")
+        print("❌ Error al enviar el correo:", e)
+
+if __name__ == "__main__":
+    enviar_correo_fallo_whatsapp()
