@@ -323,11 +323,14 @@ def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual):
         # 📌 Detectar y registrar cita SOLO si YA estamos en etapa 'cierre' o 'aclaracion_cierre'
         if estado["etapa"] in ["cierre", "aclaracion_cierre"]:
             cita = extraer_fecha_y_hora(mensaje)
+            logger.info("📅 Cita detectada: fecha=%s, hora=%s, ubicacion=%s", cita.get("fecha"), cita.get("hora"), cita.get("ubicacion"))
 
             if isinstance(cita, dict) and "fecha" in cita and "hora" in cita:
                 modalidad = "oficina" if "oficina" in mensaje.lower() else "finca" if "finca" in mensaje.lower() else ""
                 lugar = cita.get("ubicacion", "")
                 observaciones = f"Mensaje original: {mensaje}"
+                logger.info("📤 Enviando cita a hoja de cálculo: chat_id=%s, fecha=%s, hora=%s, modalidad=%s, lugar=%s",
+                chat_id, cita["fecha"], cita["hora"], modalidad, lugar)
 
                 registrar_cita_en_hoja(
                     contacto=chat_id,
@@ -346,6 +349,7 @@ def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual):
                 return obtener_respuesta_por_actividad(actividad_actual, "agradecimiento")
 
             else:
+                logger.warning("⚠️ No se pudo detectar una cita válida en el mensaje: %s", mensaje)
                 estado["etapa"] = "aclaracion_cierre"
                 estado["fase"] = "esperando_cita"
                 guardar_estado(chat_id, estado)
