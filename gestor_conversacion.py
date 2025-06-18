@@ -73,7 +73,7 @@ def registrar_cita(chat_id, fecha, hora, ubicacion=None, mensaje="", estado=None
             observaciones=""
         )
 
-        actividad = estado.get("actividad", "Otros")  # Ahora editor reconoce que es un string
+        actividad = estado.get("actividad", "Otros")
         actividad = actividad.capitalize()
 
         numero_limpio = chat_id.replace('@c.us', '')
@@ -93,7 +93,13 @@ def registrar_cita(chat_id, fecha, hora, ubicacion=None, mensaje="", estado=None
             f"✉️ Mensaje automático para coordinación inmediata."
         )
 
-        logger.debug("📦 Enviando a %s:\n%s", numero_personal, mensaje_interno)
+        # ✅ Mensaje de prueba extra para verificar envío
+        mensaje_prueba = "✅ Prueba técnica: confirmación de que el sistema llegó a esta parte. Si ves esto, Green API está funcionando correctamente."
+
+        logger.debug("📦 Enviando mensaje de prueba a %s", numero_personal)
+        enviar_mensaje(numero_personal, mensaje_prueba)
+
+        logger.debug("📦 Enviando mensaje completo a %s:\n%s", numero_personal, mensaje_interno)
         enviar_mensaje(numero_personal, mensaje_interno)
 
     except Exception as e:
