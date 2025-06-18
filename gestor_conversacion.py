@@ -55,7 +55,7 @@ def enviar_alerta_a_personal(chat_id, mensaje, actividad, etapa, fase, fecha, no
     except Exception as e:
         logger.warning("⚠️ No se pudo enviar alerta personalizada: %s", e)
 
-def registrar_cita(chat_id, fecha, hora, ubicacion=None):
+def registrar_cita(chat_id, fecha, hora, ubicacion=None, mensaje="", estado=None):
     logger.info("🗕️ Se registró una cita para %s: {'fecha': '%s', 'hora': '%s', 'ubicacion': '%s'}", chat_id, fecha, hora, ubicacion)
 
     ubicacion_segura = ubicacion or ""
@@ -73,12 +73,23 @@ def registrar_cita(chat_id, fecha, hora, ubicacion=None):
             observaciones=""
         )
 
+        actividad = estado.get("actividad", "Otros")  # Ahora editor reconoce que es un string
+        actividad = actividad.capitalize()
+
+        numero_limpio = chat_id.replace('@c.us', '')
+        link_whatsapp = f"https://wa.me/{numero_limpio}"
+        mensaje_original = estado.get("ultimo_mensaje_procesado", "")
+        modalidad_texto = "Visita en finca" if "finca" in ubicacion_segura.lower() else "Reunión en oficina"
+
         mensaje_interno = (
             f"📢 *Nueva cita registrada:*\n"
             f"📅 *Fecha:* {fecha}\n"
             f"🕒 *Hora:* {hora}\n"
             f"📍 *Lugar:* {ubicacion_segura or 'No especificado'}\n"
-            f"📞 *Cliente:* {chat_id.replace('@c.us', '')}\n"
+            f"🏷 *Actividad:* {actividad}\n"
+            f"🏡 *Modalidad:* {modalidad_texto}\n"
+            f"📞 *Cliente:* +{numero_limpio} → [Escribir por WhatsApp]({link_whatsapp})\n"
+            f"📝 *Observaciones:* {mensaje_original or '(sin mensaje)'}\n"
             f"✉️ Mensaje automático para coordinación inmediata."
         )
 
@@ -332,13 +343,13 @@ def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual):
                 logger.info("📤 Enviando cita a hoja de cálculo: chat_id=%s, fecha=%s, hora=%s, modalidad=%s, lugar=%s",
                 chat_id, cita["fecha"], cita["hora"], modalidad, lugar)
 
-                registrar_cita_en_hoja(
-                    contacto=chat_id,
-                    fecha_cita=cita["fecha"],
+                registrar_cita(
+                    chat_id=chat_id,
+                    fecha=cita["fecha"],
                     hora=cita["hora"],
-                    modalidad=modalidad,
-                    lugar=lugar,
-                    observaciones=observaciones
+                    ubicacion=lugar,
+                    mensaje=mensaje,
+                    estado=estado
                 )
 
                 estado["etapa"] = "agradecimiento"
