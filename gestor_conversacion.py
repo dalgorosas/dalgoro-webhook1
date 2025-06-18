@@ -15,6 +15,7 @@ from respuestas_por_actividad import (
 from respuestas_por_actividad import NEGATIVOS_FUERTES
 from bot import enviar_mensaje  # Asegúrate que esta importación está activa arriba
 from respuestas_por_actividad import clasificar_permiso  # asegúrate de importar
+from correo_utils import enviar_correo_asunto  # asegúrate de importar esto
 import logging
 
 logging.basicConfig(level=logging.INFO)
@@ -112,7 +113,11 @@ def registrar_cita(chat_id, fecha, hora, ubicacion=None, mensaje="", estado=None
             f"📍 Ubicación: {ubicacion_segura or 'No especificado'}\n"
             f"⚠️ Detalle técnico: {str(e)}"
         )
-        enviar_mensaje(numero_personal, mensaje_falla)
+        try:
+            enviar_mensaje(numero_personal, mensaje_falla)
+        except Exception as ex:
+            logger.error("❌ Falló también el envío por WhatsApp: %s", ex)
+            enviar_correo_asunto(mensaje_falla)
 
 def formatear_respuesta(respuesta):
     if isinstance(respuesta, str):
