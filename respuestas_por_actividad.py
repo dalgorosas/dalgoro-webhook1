@@ -274,3 +274,6 @@ for actividad in FLUJOS_POR_ACTIVIDAD:
         "👌 Entiendo perfectamente. Si más adelante desea nuestra ayuda ambiental, estaremos disponibles por este medio. "
         "Gracias por habernos escrito 🌱"
     )
+    FLUJOS_POR_ACTIVIDAD[actividad]["salida_ambigua"] = (
+        "🙏 Entiendo que necesitas más tiempo para decidirlo. Cuando estés listo, puedes escribirnos y retomamos la conversación sin problema. ¡Gracias por tu interés en DALGORO! 🌿"
+    )

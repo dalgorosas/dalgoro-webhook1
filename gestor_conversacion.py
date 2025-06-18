@@ -169,6 +169,17 @@ def determinar_siguiente_etapa(estado_actual, mensaje):
         else:
             return "aclaracion_permiso_no", "esperando_cita"
 
+    elif etapa == "aclaracion_permiso_si":
+        clasificacion = clasificar_permiso(mensaje)
+        if clasificacion == "si":
+            return "cierre", "esperando_cita"
+        elif clasificacion == "no":
+            return "permiso_no", "confirmado"
+        elif any(x in mensaje.lower() for x in ["agenda", "visita", "quiero", "cita", "coordinar"]):
+            return "cierre", "esperando_cita"
+        else:
+            return "aclaracion_permiso_si", "esperando_cita"
+
     elif etapa == "cierre":
         if extraer_fecha_y_hora(mensaje):
             return "agradecimiento", "cita_registrada"
@@ -248,6 +259,28 @@ def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual):
             activar_bloqueo(chat_id)
             logger.warning("❌ Mensaje duplicado detectado para %s. Activando bloqueo.", chat_id)
             return None
+
+        # 🔁 Manejo especial: evitar bucle en aclaracion_permiso_si
+        if estado.get("etapa") == "aclaracion_permiso_si":
+            from respuestas_por_actividad import PERMISOS_SI
+
+            if not any(p in mensaje.lower() for p in PERMISOS_SI) and not any(x in mensaje.lower() for x in ["agenda", "visita", "quiero", "cita", "coordinar"]):
+                estado["intentos_aclaracion"] = estado.get("intentos_aclaracion", 0) + 1
+                logger.info("🌀 Reintento #%s en aclaracion_permiso_si para %s", estado["intentos_aclaracion"], chat_id)
+
+                if estado["intentos_aclaracion"] >= 2:
+                    estado["etapa"] = "salida_ambigua"
+                    estado["fase"] = "salida"
+                    guardar_estado(chat_id, estado)
+                    registrar_mensaje(chat_id, mensaje)
+                    return obtener_respuesta_por_actividad(estado.get("actividad", "otros"), "salida_ambigua")
+
+                # Si aún no llega al límite, reforzar aclaración
+                guardar_estado(chat_id, estado)
+                registrar_mensaje(chat_id, mensaje)
+                return obtener_respuesta_por_actividad(estado.get("actividad", "otros"), "aclaracion_permiso_si")
+            else:
+                estado["intentos_aclaracion"] = 0  # Reiniciar si ya respondió correctamente
 
         # 🎯 Determinar siguiente etapa de forma estricta
         nueva_etapa, nueva_fase = determinar_siguiente_etapa(estado, mensaje)

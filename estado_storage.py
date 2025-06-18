@@ -52,6 +52,8 @@ def obtener_estado(chat_id):
     if resultado:
         if "ultima_interaccion" in resultado:
             resultado["ultima_interaccion"] = isoparse(resultado["ultima_interaccion"])
+        if "intentos_aclaracion" not in resultado:
+            resultado["intentos_aclaracion"] = 0  # Añadir campo si no existe
         logger.info("✅ Estado encontrado: %s", resultado)
         return resultado
 
@@ -60,21 +62,11 @@ def obtener_estado(chat_id):
             "actividad": None,
             "etapa": None,
             "fase": "inicio",
-            "ultima_interaccion": datetime.now(ZONA_HORARIA_EC).isoformat()
+            "ultima_interaccion": datetime.now(ZONA_HORARIA_EC).isoformat(),
+            "intentos_aclaracion": 0
         }
         logger.info("🆕 Estado nuevo para %s: %s", chat_id, nuevo)
         return nuevo
-
-def guardar_estado(chat_id, nuevo_estado):
-    nuevo_estado["chat_id"] = chat_id
-    nuevo_estado["ultima_interaccion"] = datetime.now(ZONA_HORARIA_EC).isoformat()
-    logger.debug("📦 Estado a guardar en DB para %s: %s", chat_id, nuevo_estado)
-    db.upsert(nuevo_estado, Conversacion.chat_id == chat_id)
-    try:
-        from google_sheets_utils import guardar_estado_en_sheets
-        guardar_estado_en_sheets(chat_id, nuevo_estado)
-    except Exception as e:
-        logger.warning("⚠️ No se pudo guardar en Sheets: %s", e)
 
 def reiniciar_estado(chat_id):
     logger.info("🗑 Reiniciando estado para %s", chat_id)
@@ -83,7 +75,8 @@ def reiniciar_estado(chat_id):
         "actividad": None,
         "etapa": None,
         "fase": "inicio",
-        "ultima_interaccion": datetime.now(ZONA_HORARIA_EC).isoformat()
+        "ultima_interaccion": datetime.now(ZONA_HORARIA_EC).isoformat(),
+        "intentos_aclaracion": 0
     })
 
 def obtener_estado_seguro(chat_id):
@@ -95,8 +88,21 @@ def obtener_estado_seguro(chat_id):
             "actividad": None,
             "etapa": None,
             "fase": "inicio",
-            "ultima_interaccion": datetime.now(ZONA_HORARIA_EC).isoformat()
+            "ultima_interaccion": datetime.now(ZONA_HORARIA_EC).isoformat(),
+            "intentos_aclaracion": 0
         }
+
+       
+def guardar_estado(chat_id, nuevo_estado):
+    nuevo_estado["chat_id"] = chat_id
+    nuevo_estado["ultima_interaccion"] = datetime.now(ZONA_HORARIA_EC).isoformat()
+    logger.debug("📦 Estado a guardar en DB para %s: %s", chat_id, nuevo_estado)
+    db.upsert(nuevo_estado, Conversacion.chat_id == chat_id)
+    try:
+        from google_sheets_utils import guardar_estado_en_sheets
+        guardar_estado_en_sheets(chat_id, nuevo_estado)
+    except Exception as e:
+        logger.warning("⚠️ No se pudo guardar en Sheets: %s", e)
 
 def mensaje_ya_procesado(chat_id, mensaje_id):
     estado = obtener_estado(chat_id)
