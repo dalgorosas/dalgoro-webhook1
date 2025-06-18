@@ -38,11 +38,14 @@ def registrar_cita(chat_id, fecha, hora, ubicacion=None, mensaje="", estado=None
 
     # ✅ Usamos primero el mensaje recibido directamente, luego el del estado, y nunca dejamos vacío
     mensaje_original = mensaje or estado.get("ultimo_mensaje_procesado", "(sin mensaje)")
-    numero_limpio = chat_id.replace("@c.us", "")
+    import re
+
+    # Limpia el número dejando solo dígitos
+    numero_limpio = re.sub(r"\D", "", chat_id.split("@")[0])
 
     try:
         registrar_cita_en_hoja(
-            contacto=chat_id,
+            contacto=numero_limpio,
             fecha_cita=fecha,
             hora=hora,
             modalidad=modalidad,
