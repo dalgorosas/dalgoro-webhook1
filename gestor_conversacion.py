@@ -78,7 +78,7 @@ def registrar_cita(chat_id, fecha, hora, ubicacion=None, mensaje="", estado=None
         actividad = actividad.capitalize()
 
         numero_limpio = chat_id.replace('@c.us', '')
-        link_whatsapp = f"https://w.me/{numero_limpio}"
+        link_whatsapp = f"https://wa.me/{numero_limpio}"
         mensaje_original = estado.get("ultimo_mensaje_procesado", "")
         modalidad_texto = "Visita en finca" if "finca" in ubicacion_segura.lower() else "Reunión en oficina"
 
