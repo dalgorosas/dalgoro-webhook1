@@ -372,10 +372,36 @@ def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual):
 
         # ⛔ Validación estricta: no avanzar si la nueva_etapa no está definida
         if nueva_etapa not in flujo_definido:
-            logger.error("❌ Etapa no válida: %s no está definida para la actividad %s", nueva_etapa, actividad_actual)
-            return "🙏 Gracias por su mensaje. En breve le responderemos personalmente para coordinar su cita. 🌱"
+            logger.warning("❌ Etapa no válida: %s no está definida para la actividad %s. Intentando recuperación con IA...", nueva_etapa, actividad_actual)
+        
+            intencion = detectar_intencion(mensaje)
+            logger.info("🧠 Recuperación por IA activa. Intención detectada: %s", intencion)
 
-        # ⛔ No saltarse etapas: permitir solo transiciones válidas
+            if intencion == "mencion_permiso":
+                estado["etapa"] = "permiso_si"
+                estado["fase"] = "confirmado"
+            elif intencion == "negativo_fuerte":
+                estado["etapa"] = "salida_amable"
+                estado["fase"] = "cerrado_amablemente"
+            elif intencion == "negativo_ambiguo":
+                estado["etapa"] = "aclaracion_permiso_no"
+                estado["fase"] = "confirmado"
+            elif intencion == "pregunta_abierta":
+                estado["etapa"] = "aclaracion_introduccion"
+                estado["fase"] = "confirmado"
+            elif intencion == "ofensivo":
+                estado["etapa"] = "salida_amable"
+                estado["fase"] = "cerrado_amablemente"
+                registrar_fallo_para_contacto(chat_id, mensaje, estado, motivo="❌ Mensaje ofensivo")
+                guardar_estado(chat_id, estado)
+                registrar_mensaje(chat_id, mensaje)
+                return "😞 Hemos detectado un mensaje inapropiado. Finalizamos la conversación, pero puede escribirnos nuevamente si desea orientación."
+            else:
+                # fallback final
+                logger.warning("🤖 No se pudo recuperar con IA. Usando respuesta por defecto.")
+                return obtener_respuesta_por_actividad("otros", "introduccion")
+
+# ⛔ No saltarse etapas: permitir solo transiciones válidas
         etapas_definidas = list(flujo_definido.keys())
         indice_actual = etapas_definidas.index(etapa_actual) if etapa_actual in etapas_definidas else -1
         indice_nueva = etapas_definidas.index(nueva_etapa) if nueva_etapa in etapas_definidas else -1
@@ -482,6 +508,10 @@ def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual):
             guardar_estado(chat_id, estado)
             registrar_mensaje(chat_id, mensaje)
             return RESPUESTA_INICIAL
+        
+        guardar_estado(chat_id, estado)
+        registrar_mensaje(chat_id, mensaje)
+        return obtener_respuesta_por_actividad(estado.get("actividad", "otros"), estado.get("etapa", "introduccion"))
 
     except Exception as e:
         logger.exception("❌ Error crítico en manejar_conversacion con %s: %s", chat_id, e)
