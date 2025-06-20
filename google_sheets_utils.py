@@ -232,6 +232,10 @@ def registrar_cita_en_hoja(contacto, fecha_cita, hora, modalidad, lugar, observa
         hoja.append_row(nueva_fila)
         logger.info("✅ Cita registrada para %s en %s a las %s.", contacto, fecha_cita, hora)
 
+        if not fecha or not hora:
+            logger.warning("⚠️ Intento de registro sin fecha u hora válidas: %s %s", fecha, hora)
+            return
+
     except Exception as e:
         logger.error("❌ Error al registrar cita en Google Sheets: %s", e)
 

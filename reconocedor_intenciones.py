@@ -46,4 +46,13 @@ def detectar_intencion(texto):
     if re.search(r"(cómo|qué|cuándo|dónde|para qué|puedo|necesito)", texto):
         return "pregunta_abierta"
 
+    EXPRESIONES_CITA = [
+    "agenda", "visita", "cita", "coordinar", "nos vemos", "reunión", "vernos",
+    "pueden venir", "pueden pasar", "me gustaría que vengan"
+    ]
+
+    if any(palabra in texto.lower() for palabra in EXPRESIONES_CITA):
+        return "cita_implicita"
+
+    
     return "indefinido"

@@ -145,34 +145,36 @@ def determinar_siguiente_etapa(estado_actual, mensaje):
 
     elif etapa == "aclaracion_permiso_si":
         clasificacion = clasificar_permiso(mensaje)
+        intencion = detectar_intencion(mensaje)
+
         if clasificacion == "si":
             return "cierre", "esperando_cita"
         elif clasificacion == "no":
             return "permiso_no", "confirmado"
-        elif any(x in mensaje.lower() for x in ["agenda", "visita", "quiero", "cita", "coordinar"]):
+        elif intencion == "cita_implicita":
             return "cierre", "esperando_cita"
+        elif intencion in ["pregunta_abierta", "mencion_permiso"]:
+            return "aclaracion_permiso_si", "esperando_cita"
+        elif intencion in ["negativo_fuerte", "ofensivo"]:
+            return "salida_amable", "cerrado_amablemente"
         else:
-            intencion = detectar_intencion(mensaje)
-            if intencion in ["pregunta_abierta", "mencion_permiso"]:
-                return "aclaracion_permiso_si", "esperando_cita"
-            elif intencion in ["negativo_fuerte", "ofensivo"]:
-                return "salida_amable", "cerrado_amablemente"
             return "aclaracion_permiso_si", "esperando_cita"
 
     elif etapa == "aclaracion_permiso_no":
         clasificacion = clasificar_permiso(mensaje)
+        intencion = detectar_intencion(mensaje)
+
         if clasificacion == "no":
             return "permiso_no", "confirmado"
         elif clasificacion == "si":
             return "cierre", "esperando_cita"
-        elif any(x in mensaje.lower() for x in ["agenda", "visita", "quiero", "cita", "coordinar"]):
+        elif intencion == "cita_implicita":
             return "cierre", "esperando_cita"
+        elif intencion in ["pregunta_abierta", "mencion_permiso"]:
+            return "aclaracion_permiso_no", "esperando_cita"
+        elif intencion in ["negativo_fuerte", "ofensivo"]:
+            return "salida_amable", "cerrado_amablemente"
         else:
-            intencion = detectar_intencion(mensaje)
-            if intencion in ["pregunta_abierta", "mencion_permiso"]:
-                return "aclaracion_permiso_no", "esperando_cita"
-            elif intencion in ["negativo_fuerte", "ofensivo"]:
-                return "salida_amable", "cerrado_amablemente"
             return "aclaracion_permiso_no", "esperando_cita"
 
     elif etapa == "cierre":
