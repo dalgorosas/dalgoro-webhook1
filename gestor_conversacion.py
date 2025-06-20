@@ -219,11 +219,10 @@ def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual):
             activar_bloqueo(chat_id)
             logger.warning("❌ Mensaje duplicado detectado para %s. Activando bloqueo.", chat_id)
 
-            # Registrar el fallo si no es negativo ni ofensivo
             if not any(x in mensaje.lower() for x in NEGATIVOS_FUERTES) and not mensaje.strip().startswith("AUDIO:"):
                 registrar_fallo_para_contacto(chat_id, mensaje, estado, motivo="⚠️ Error: mensaje duplicado en etapa")
 
-            return obtener_respuesta_por_actividad(estado.get("actividad", "otros"), estado.get("etapa", "introduccion"))
+            return "🙏 Gracias por su mensaje. En breve le responderemos personalmente para coordinar su cita. 🌱"
 
         # 🔁 Manejo especial: evitar bucle en aclaracion_permiso_si
         if estado.get("etapa") == "aclaracion_permiso_si":
