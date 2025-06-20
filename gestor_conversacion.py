@@ -171,6 +171,20 @@ def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual):
     try:
         estado = obtener_estado_seguro(chat_id)
 
+        # 🛡️ Control de duplicados: se ejecuta ANTES de todo
+        if bloqueo_activo(chat_id):
+            logger.warning("⚠️ Evitando duplicidad por bloqueo activo para %s", chat_id)
+            return None
+
+        if mensaje_duplicado(chat_id, mensaje):
+            activar_bloqueo(chat_id)
+            logger.warning("❌ Mensaje duplicado detectado para %s. Activando bloqueo.", chat_id)
+
+            if not any(x in mensaje.lower() for x in NEGATIVOS_FUERTES) and not mensaje.strip().startswith("AUDIO:"):
+                registrar_fallo_para_contacto(chat_id, mensaje, estado, motivo="⚠️ Error: mensaje duplicado en etapa")
+
+            return obtener_respuesta_por_actividad(estado.get("actividad", "otros"), estado.get("etapa", "introduccion"))
+
         # 🚫 Detección anticipada de desinterés o negativa persistente
         if any(p in mensaje.lower() for p in NEGATIVOS_FUERTES):
             estado["intentos_negativos"] = estado.get("intentos_negativos", 0) + 1
@@ -211,38 +225,33 @@ def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual):
                 registrar_mensaje(chat_id, mensaje)
                 return "🙏 Para poder orientarle mejor, ¿podría indicarnos a qué actividad se dedica? Ej: *bananera, camaronera, minería...* 🌱"
 
-        # 🛡️ Control de duplicados
-        if bloqueo_activo(chat_id):
-            logger.warning("⚠️ Evitando duplicidad por bloqueo activo para %s", chat_id)
-            return None
-        if mensaje_duplicado(chat_id, mensaje):
-            activar_bloqueo(chat_id)
-            logger.warning("❌ Mensaje duplicado detectado para %s. Activando bloqueo.", chat_id)
-
-            if not any(x in mensaje.lower() for x in NEGATIVOS_FUERTES) and not mensaje.strip().startswith("AUDIO:"):
-                registrar_fallo_para_contacto(chat_id, mensaje, estado, motivo="⚠️ Error: mensaje duplicado en etapa")
-
-            return "🙏 Gracias por su mensaje. En breve le responderemos personalmente para coordinar su cita. 🌱"
-
         # 🔁 Manejo especial: evitar bucle en aclaracion_permiso_si
         if estado.get("etapa") == "aclaracion_permiso_si":
             from respuestas_por_actividad import PERMISOS_SI
 
-            if not any(p in mensaje.lower() for p in PERMISOS_SI) and not any(x in mensaje.lower() for x in ["agenda", "visita", "quiero", "cita", "coordinar"]):
+            expresiones_validas = PERMISOS_SI + ["agenda", "visita", "quiero", "cita", "coordinar"]
+
+            if not any(p in mensaje.lower() for p in expresiones_validas):
                 estado["intentos_aclaracion"] = estado.get("intentos_aclaracion", 0) + 1
                 logger.info("🌀 Reintento #%s en aclaracion_permiso_si para %s", estado["intentos_aclaracion"], chat_id)
 
-                if estado["intentos_aclaracion"] >= 2:
+                if estado["intentos_aclaracion"] == 1:
+                    guardar_estado(chat_id, estado)
+                    registrar_mensaje(chat_id, mensaje)
+                    return obtener_respuesta_por_actividad(estado.get("actividad", "otros"), "aclaracion_permiso_si")
+
+                elif estado["intentos_aclaracion"] == 2:
+                    guardar_estado(chat_id, estado)
+                    registrar_mensaje(chat_id, mensaje)
+                    return "🙏 Solo para confirmar, ¿usted cuenta actualmente con un permiso ambiental vigente como licencia o registro? Esto nos ayudará a guiarle mejor."
+
+                elif estado["intentos_aclaracion"] >= 3:
                     estado["etapa"] = "salida_ambigua"
                     estado["fase"] = "salida"
                     guardar_estado(chat_id, estado)
                     registrar_mensaje(chat_id, mensaje)
                     return obtener_respuesta_por_actividad(estado.get("actividad", "otros"), "salida_ambigua")
 
-                # Si aún no llega al límite, reforzar aclaración
-                guardar_estado(chat_id, estado)
-                registrar_mensaje(chat_id, mensaje)
-                return obtener_respuesta_por_actividad(estado.get("actividad", "otros"), "aclaracion_permiso_si")
             else:
                 estado["intentos_aclaracion"] = 0  # Reiniciar si ya respondió correctamente
 
@@ -320,6 +329,20 @@ def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual):
                 registrar_mensaje(chat_id, mensaje)
                 return obtener_respuesta_por_actividad(actividad_actual, "aclaracion_cierre")
 
+        if estado["etapa"] == "aclaracion_cierre":
+            cita = extraer_fecha_y_hora(mensaje)
+            if not (isinstance(cita, dict) and "fecha" in cita and "hora" in cita):
+                estado["intentos_aclaracion"] = estado.get("intentos_aclaracion", 0) + 1
+                logger.warning("⚠️ Reintento %s de cita incompleta en aclaracion_cierre", estado["intentos_aclaracion"])
+
+                if estado["intentos_aclaracion"] >= 2:
+                    registrar_fallo_para_contacto(chat_id, mensaje, estado, motivo="⚠️ Cita ambigua, requiere contacto directo")
+                    return "Gracias por su interés. Vamos a coordinar directamente con usted para confirmar su cita. 🌱"
+
+                guardar_estado(chat_id, estado)
+                registrar_mensaje(chat_id, mensaje)
+                return obtener_respuesta_por_actividad(estado.get("actividad", "otros"), "aclaracion_cierre")
+
         # 💾 Guardar estado final
         estado["ultima_interaccion"] = fecha_actual.isoformat()
         estado["chat_id"] = chat_id
@@ -333,6 +356,16 @@ def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual):
             if not any(x in mensaje.lower() for x in NEGATIVOS_FUERTES) and not mensaje.strip().startswith("AUDIO:"):
                 registrar_fallo_para_contacto(chat_id, mensaje, estado, motivo="📩 Reactivación posterior a salida_ambigua")
 
+                # 📝 Se puede también registrar una fila explícita de reactivación en Google Sheets si lo deseas:
+                registrar_cita(
+                    chat_id=chat_id,
+                    fecha="REACTIVADO",
+                    hora="REACTIVADO",
+                    ubicacion="",
+                    mensaje=mensaje,
+                    estado=estado
+                )
+
             estado["etapa"] = ""
             estado["fase"] = "inicio"
             estado["actividad"] = ""
@@ -340,8 +373,6 @@ def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual):
             guardar_estado(chat_id, estado)
             registrar_mensaje(chat_id, mensaje)
             return RESPUESTA_INICIAL
-
-        return obtener_respuesta_por_actividad(actividad_actual, nueva_etapa)
 
     except Exception as e:
         logger.exception("❌ Error crítico en manejar_conversacion con %s: %s", chat_id, e)
