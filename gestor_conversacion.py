@@ -7,6 +7,7 @@ from interpretador_citas import extraer_fecha_y_hora
 from control_antirrepeticion import mensaje_duplicado, registrar_mensaje, bloqueo_activo, activar_bloqueo
 from google_sheets_utils import registrar_cita_en_hoja
 from google_sheets_utils import registrar_fallo_para_contacto
+from reconocedor_intenciones import detectar_intencion
 from respuestas_por_actividad import (
     detectar_actividad,
     obtener_respuesta_por_actividad,
@@ -225,12 +226,59 @@ def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual):
                 registrar_mensaje(chat_id, mensaje)
                 return "🙏 Para poder orientarle mejor, ¿podría indicarnos a qué actividad se dedica? Ej: *bananera, camaronera, minería...* 🌱"
 
-        # 🔁 Manejo especial: evitar bucle en aclaracion_permiso_si
+        # 🔁 Manejo especial: evitar bucle en aclaracion_permiso_si con IA básica
         if estado.get("etapa") == "aclaracion_permiso_si":
             from respuestas_por_actividad import PERMISOS_SI
+            from reconocedor_intenciones import detectar_intencion
 
             expresiones_validas = PERMISOS_SI + ["agenda", "visita", "quiero", "cita", "coordinar"]
+            tipo_respuesta = detectar_intencion(mensaje)
 
+            if tipo_respuesta in ["pregunta_abierta", "mencion_permiso"]:
+                estado["intentos_aclaracion"] = 0
+                estado["etapa"] = "cierre"
+                estado["fase"] = "esperando_cita"
+                guardar_estado(chat_id, estado)
+                registrar_mensaje(chat_id, mensaje)
+                return obtener_respuesta_por_actividad(estado.get("actividad", "otros"), "cierre")
+
+            elif tipo_respuesta == "negativo_fuerte":
+                estado["fase"] = "cerrado_amablemente"
+                estado["etapa"] = "salida_amable"
+                guardar_estado(chat_id, estado)
+                registrar_mensaje(chat_id, mensaje)
+                return obtener_respuesta_por_actividad(estado.get("actividad", "otros"), "salida_amable")
+
+            elif tipo_respuesta == "ofensivo":
+                estado["fase"] = "cerrado_amablemente"
+                estado["etapa"] = "salida_amable"
+                registrar_fallo_para_contacto(chat_id, mensaje, estado, motivo="❌ Mensaje ofensivo")
+                guardar_estado(chat_id, estado)
+                registrar_mensaje(chat_id, mensaje)
+                return "😞 Hemos detectado un mensaje inapropiado. Finalizamos la conversación, pero puede escribirnos nuevamente si desea orientación."
+
+            elif tipo_respuesta == "negativo_ambiguo":
+                estado["intentos_aclaracion"] = estado.get("intentos_aclaracion", 0) + 1
+                logger.info("🌀 Reintento #%s en aclaracion_permiso_si para %s", estado["intentos_aclaracion"], chat_id)
+
+                if estado["intentos_aclaracion"] == 1:
+                    guardar_estado(chat_id, estado)
+                    registrar_mensaje(chat_id, mensaje)
+                    return obtener_respuesta_por_actividad(estado.get("actividad", "otros"), "aclaracion_permiso_si")
+
+                elif estado["intentos_aclaracion"] == 2:
+                    guardar_estado(chat_id, estado)
+                    registrar_mensaje(chat_id, mensaje)
+                    return "🙏 Solo para confirmar, ¿usted cuenta actualmente con un permiso ambiental vigente como licencia o registro? Esto nos ayudará a guiarle mejor."
+
+                elif estado["intentos_aclaracion"] >= 3:
+                    estado["etapa"] = "salida_ambigua"
+                    estado["fase"] = "salida"
+                    guardar_estado(chat_id, estado)
+                    registrar_mensaje(chat_id, mensaje)
+                    return obtener_respuesta_por_actividad(estado.get("actividad", "otros"), "salida_ambigua")
+
+            # Si no está en ninguna categoría IA, verificar manualmente si contiene expresiones válidas
             if not any(p in mensaje.lower() for p in expresiones_validas):
                 estado["intentos_aclaracion"] = estado.get("intentos_aclaracion", 0) + 1
                 logger.info("🌀 Reintento #%s en aclaracion_permiso_si para %s", estado["intentos_aclaracion"], chat_id)
@@ -253,7 +301,62 @@ def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual):
                     return obtener_respuesta_por_actividad(estado.get("actividad", "otros"), "salida_ambigua")
 
             else:
-                estado["intentos_aclaracion"] = 0  # Reiniciar si ya respondió correctamente
+                estado["intentos_aclaracion"] = 0  # Reinicia si responde correctamente
+
+        # 🔁 Manejo especial: evitar bucle en aclaracion_permiso_no
+        if estado.get("etapa") == "aclaracion_permiso_no":
+            from reconocedor_intenciones import detectar_intencion
+
+            intencion = detectar_intencion(mensaje)
+            logger.info("🔍 Intención detectada en aclaracion_permiso_no: %s", intencion)
+
+            if intencion in ["ofensivo", "negativo_fuerte"]:
+                estado["fase"] = "cerrado_amablemente"
+                estado["etapa"] = "salida_amable"
+                estado["ultima_interaccion"] = fecha_actual.isoformat()
+                guardar_estado(chat_id, estado)
+                registrar_mensaje(chat_id, mensaje)
+                return obtener_respuesta_por_actividad(estado.get("actividad", "otros"), "salida_amable")
+
+            elif intencion == "negativo_ambiguo":
+                estado["intentos_aclaracion"] = estado.get("intentos_aclaracion", 0) + 1
+                logger.info("🌀 Reintento #%s en aclaracion_permiso_no para %s", estado["intentos_aclaracion"], chat_id)
+
+                if estado["intentos_aclaracion"] == 1:
+                    guardar_estado(chat_id, estado)
+                    registrar_mensaje(chat_id, mensaje)
+                    return obtener_respuesta_por_actividad(estado.get("actividad", "otros"), "aclaracion_permiso_no")
+
+                elif estado["intentos_aclaracion"] >= 2:
+                    estado["etapa"] = "salida_ambigua"
+                    estado["fase"] = "salida"
+                    guardar_estado(chat_id, estado)
+                    registrar_mensaje(chat_id, mensaje)
+                    return obtener_respuesta_por_actividad(estado.get("actividad", "otros"), "salida_ambigua")
+
+            elif intencion in ["pregunta_abierta", "mencion_permiso", "indefinido"]:
+                # Se queda en aclaración, no avanza ni bloquea
+                guardar_estado(chat_id, estado)
+                registrar_mensaje(chat_id, mensaje)
+                return obtener_respuesta_por_actividad(estado.get("actividad", "otros"), "aclaracion_permiso_no")
+
+            elif intencion == "reactivacion":
+                estado["etapa"] = "permiso_no"
+                estado["fase"] = "confirmado"
+                estado["ultima_interaccion"] = fecha_actual.isoformat()
+                guardar_estado(chat_id, estado)
+                registrar_mensaje(chat_id, mensaje)
+                return obtener_respuesta_por_actividad(estado.get("actividad", "otros"), "permiso_no")
+
+            else:
+                # Si llega a decir algo que indica intención de cita
+                if any(p in mensaje.lower() for p in ["agenda", "visita", "quiero", "cita", "coordinar", "sí deseo", "sí quiero", "vamos", "hagamos"]):
+                    estado["intentos_aclaracion"] = 0  # ✅ Reinicia si responde bien
+                    estado["etapa"] = "cierre"
+                    estado["fase"] = "esperando_cita"
+                    guardar_estado(chat_id, estado)
+                    registrar_mensaje(chat_id, mensaje)
+                    return obtener_respuesta_por_actividad(estado.get("actividad", "otros"), "cierre")
 
         # 🎯 Determinar siguiente etapa de forma estricta
         nueva_etapa, nueva_fase = determinar_siguiente_etapa(estado, mensaje)

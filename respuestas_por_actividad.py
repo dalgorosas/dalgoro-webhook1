@@ -126,15 +126,50 @@ FLUJOS_POR_ACTIVIDAD = {
     },
 
     "otros": {
-        "introduccion": "🌿 Entendido, gracias por su mensaje. Para poder orientarle mejor, nos gustaría conocer un poco más sobre su actividad productiva.\n\nPodemos visitarle personalmente para entender su caso y brindarle una solución completa, sin compromiso.\n\n¿Le gustaría agendar una evaluación gratuita?\n\n👉 Sí, deseo agendar\n👉 No por ahora",
-        "aclaracion_introduccion": "🙏 Solo para confirmar, ¿le gustaría que le visitemos para conocer mejor su actividad y brindarle una evaluación gratuita?\nCon eso podremos orientarle con mayor claridad 🌿",
-        "permiso_si": "✅ Gracias por compartirlo. Contar con un permiso ya es un paso importante.\n\nPodemos revisar si todo está conforme a la normativa vigente y si requiere alguna actualización.\nLa asesoría es gratuita y personalizada. ¿Cuándo le vendría bien que le visitemos? 😊",
-        "aclaracion_permiso_si": "🙏 Solo para confirmar, ¿desea agendar una evaluación gratuita para validar sus permisos actuales?\nPodemos ir hasta su oficina o al sitio donde se desarrolla su actividad 🚗",
-        "permiso_no": "No se preocupe, todos empezamos por algún lado.\n\nEstamos aquí para acompañarle desde cero, explicándole con claridad qué necesita para cumplir con la normativa ambiental.\n\nPodemos visitarle en su oficina o en el lugar donde desarrolla su actividad. ¿Le interesa que agendemos la cita? 📅",
-        "aclaracion_permiso_no": "🙏 Si desea iniciar su proceso ambiental, podemos brindarle una asesoría presencial gratuita.\nSolo indíquenos si desea que coordinemos la visita 😊",
-        "cierre": "Perfecto, solo necesitamos saber:\n📅 Día\n⏰ Hora\n📍 Lugar (oficina o sitio de trabajo)\n\nLa evaluación es gratuita, sin compromiso y diseñada para brindarle una guía clara 🌱",
-        "aclaracion_cierre": "🙏 ¿Nos puede indicar día, hora y lugar para programar su cita?\nLe visitaremos con gusto para conocer su caso de forma directa y darle la mejor orientación 🌿",
-        "agradecimiento": "🙌 Su cita ha sido registrada correctamente.\n\nEl Ing. Darwin González Romero se comunicará con usted mediante el número 0984770663 para confirmar todos los detalles.\n\n¡Gracias por confiar en nosotros! Estamos aquí para ayudarle a avanzar de forma segura y profesional 🌿"
+        "introduccion": (
+        "🌿 Entendido, gracias por su mensaje. Para poder orientarle mejor, nos gustaría conocer un poco más sobre su actividad productiva.\n\n"
+        "Podemos visitarle personalmente para entender su caso y brindarle una solución completa, sin compromiso.\n\n"
+        "¿Le gustaría agendar una evaluación gratuita o prefiere primero conocer más detalles?\n\n"
+        "👉 Sí, deseo agendar\n👉 No por ahora"
+        ),
+        "aclaracion_introduccion": (
+        "🙏 Solo para confirmar, ¿le gustaría que le visitemos o prefiere primero que le expliquemos cómo funciona el proceso?\n\n"
+        "La evaluación es gratuita y sin compromiso, y le ayudará a tener claridad sobre sus obligaciones 🌱"
+        ),
+        "permiso_si": (
+        "✅ Gracias por compartirlo. Contar con un permiso ya es un buen comienzo.\n\n"
+        "Podemos revisar si todo está conforme a la normativa vigente o si requiere alguna actualización.\n\n"
+        "La asesoría inicial es gratuita. ¿Le gustaría que lo visitemos para revisar juntos su caso? 😊"
+        ),
+        "aclaracion_permiso_si": (
+        "🙏 Solo para confirmar, ¿desea que le visitemos para validar sus permisos y explicarle cómo fortalecer su cumplimiento?\n\n"
+        "La visita no tiene costo, y es una forma rápida de evitar observaciones futuras 🚗"
+        ),
+        "permiso_no": (
+        "🌱 No se preocupe, muchos de nuestros clientes inician desde cero.\n\n"
+        "Podemos explicarle paso a paso lo que necesita y cómo empezar sin complicaciones ni multas.\n\n"
+        "¿Desea que le visitemos para darle esta orientación gratuita, o prefiere que le enviemos más información primero?"
+        ),
+        "aclaracion_permiso_no": (
+        "🙏 Podemos agendarle una visita sin compromiso para explicar qué necesita según su actividad y ayudarle a empezar correctamente.\n\n"
+        "¿Le gustaría agendarla ahora o desea pensarlo un poco más?"
+        ),
+        "cierre": (
+        "Perfecto, solo necesitamos saber:\n"
+        "📅 Día\n"
+        "⏰ Hora\n"
+        "📍 Lugar (oficina o sitio de trabajo)\n\n"
+        "La evaluación es gratuita, sin compromiso y le brindará una guía clara para tomar decisiones 🌿"
+        ),
+        "aclaracion_cierre": (
+        "🙏 ¿Nos puede indicar día, hora y lugar para programar su cita?\n\n"
+        "Podemos agendar una visita tentativa si aún no tiene una fecha fija. Solo indíquenos cuándo le vendría mejor 🌱"
+        ),
+        "agradecimiento": (
+        "🙌 Su cita ha sido registrada correctamente.\n\n"
+        "El Ing. Darwin González Romero se comunicará con usted mediante el número 0984770663 para confirmar todos los detalles.\n\n"
+        "¡Gracias por confiar en nosotros! Estamos aquí para acompañarle de forma segura y profesional 🌿"
+        )
     },
 } 
 
