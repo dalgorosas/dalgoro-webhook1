@@ -224,7 +224,10 @@ def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual):
                 estado["ultima_interaccion"] = fecha_actual.isoformat()
                 guardar_estado(chat_id, estado)
                 registrar_mensaje(chat_id, mensaje)
-                return "🙏 Para poder orientarle mejor, ¿podría indicarnos a qué actividad se dedica? Ej: *bananera, camaronera, minería...* 🌱"
+                return obtener_respuesta_por_actividad(
+                    estado.get("actividad", "otros"),
+                    estado.get("etapa", "introduccion")
+                )
 
         # 🔁 Manejo especial: evitar bucle en aclaracion_permiso_si con IA básica
         if estado.get("etapa") == "aclaracion_permiso_si":
