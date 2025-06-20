@@ -54,11 +54,12 @@ def normalizar_expresiones_comunes(texto):
         "a primera hora": "hoy a las 07:00",
         "en dos días": "pasado mañana"
     }
-    reemplazos.update(
+    reemplazos.update = {
     "podemos vernos a las 10": "a las 10",
     "quedamos para el jueves": "jueves",
     "nos reunimos el viernes": "viernes",
-    "veámonos a las 3": "a las 3",)
+    "veámonos a las 3": "a las 3",
+    }
     
     texto_normalizado = texto.lower()
     for frase, sustituto in reemplazos.items():
