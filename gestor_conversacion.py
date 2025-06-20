@@ -6,6 +6,7 @@ from estado_storage import guardar_estado, obtener_estado_seguro
 from interpretador_citas import extraer_fecha_y_hora
 from control_antirrepeticion import mensaje_duplicado, registrar_mensaje, bloqueo_activo, activar_bloqueo
 from google_sheets_utils import registrar_cita_en_hoja
+from google_sheets_utils import registrar_fallo_para_contacto
 from respuestas_por_actividad import (
     detectar_actividad,
     obtener_respuesta_por_actividad,
@@ -217,7 +218,12 @@ def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual):
         if mensaje_duplicado(chat_id, mensaje):
             activar_bloqueo(chat_id)
             logger.warning("❌ Mensaje duplicado detectado para %s. Activando bloqueo.", chat_id)
-            return None
+
+            # Registrar el fallo si no es negativo ni ofensivo
+            if not any(x in mensaje.lower() for x in NEGATIVOS_FUERTES) and not mensaje.strip().startswith("AUDIO:"):
+                registrar_fallo_para_contacto(chat_id, mensaje, estado, motivo="⚠️ Error: mensaje duplicado en etapa")
+
+            return obtener_respuesta_por_actividad(estado.get("actividad", "otros"), estado.get("etapa", "introduccion"))
 
         # 🔁 Manejo especial: evitar bucle en aclaracion_permiso_si
         if estado.get("etapa") == "aclaracion_permiso_si":
@@ -320,6 +326,21 @@ def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual):
         estado["chat_id"] = chat_id
         guardar_estado(chat_id, estado)
         registrar_mensaje(chat_id, mensaje)
+
+        # 🔄 Si estamos en salida_ambigua y el cliente vuelve a escribir
+        if estado.get("etapa") == "salida_ambigua":
+            logger.info("🔄 Cliente reactivó conversación después de salida_ambigua: %s", mensaje)
+
+            if not any(x in mensaje.lower() for x in NEGATIVOS_FUERTES) and not mensaje.strip().startswith("AUDIO:"):
+                registrar_fallo_para_contacto(chat_id, mensaje, estado, motivo="📩 Reactivación posterior a salida_ambigua")
+
+            estado["etapa"] = ""
+            estado["fase"] = "inicio"
+            estado["actividad"] = ""
+            estado["ultima_interaccion"] = fecha_actual.isoformat()
+            guardar_estado(chat_id, estado)
+            registrar_mensaje(chat_id, mensaje)
+            return RESPUESTA_INICIAL
 
         return obtener_respuesta_por_actividad(actividad_actual, nueva_etapa)
 

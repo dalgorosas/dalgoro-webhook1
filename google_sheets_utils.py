@@ -268,3 +268,27 @@ def cargar_estado_desde_sheets(contacto_id):
 
 def registrar_mensaje_seguimiento(chat_id, mensaje, fecha_hora):
     registrar_mensaje(chat_id, mensaje, tipo="Seguimiento", canal="Bot")
+
+def registrar_fallo_para_contacto(chat_id, mensaje, estado, motivo="⚠️ Error detectado: flujo detenido"):
+    try:
+        import re
+        numero_limpio = re.sub(r"\D", "", chat_id.split("@")[0])
+        actividad = estado.get("actividad", "No detectada")
+        etapa = estado.get("etapa", "Sin etapa")
+        fase = estado.get("fase", "Sin fase")
+
+        observaciones = f"{motivo}. Mensaje recibido: {mensaje}. Estado actual: etapa={etapa}, fase={fase}. Contactar manualmente."
+
+        hoja = conectar_hoja("Citas")
+        nueva_fila = [
+            numero_limpio,   # contacto
+            "",              # fecha_cita
+            "",              # hora
+            "Por confirmar", # modalidad
+            "Sin datos - error en flujo",
+            observaciones    # observaciones
+        ]
+        hoja.append_row(nueva_fila)
+        logger.info("🚨 Fila de error registrada en hoja Citas para %s", chat_id)
+    except Exception as e:
+        logger.error("❌ Error al registrar falla en hoja Citas: %s", e)
