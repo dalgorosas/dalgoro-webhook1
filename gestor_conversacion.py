@@ -356,7 +356,10 @@ def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual):
                     estado["fase"] = "esperando_cita"
                     guardar_estado(chat_id, estado)
                     registrar_mensaje(chat_id, mensaje)
-                    return obtener_respuesta_por_actividad(estado.get("actividad", "otros"), "cierre")
+                    return obtener_respuesta_por_actividad(
+                        estado.get("actividad", "otros"),
+                        determinar_siguiente_etapa(estado, mensaje)[0]
+                    )
 
         # 🎯 Determinar siguiente etapa de forma estricta
         nueva_etapa, nueva_fase = determinar_siguiente_etapa(estado, mensaje)
