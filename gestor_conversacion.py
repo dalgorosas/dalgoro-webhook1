@@ -346,6 +346,13 @@ def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual):
                     registrar_mensaje(chat_id, mensaje)
                     return obtener_respuesta_por_actividad(estado.get("actividad", "otros"), "salida_ambigua")
 
+                elif tipo_respuesta in ["afirmacion_suave", "cita_implicita"]:
+                    estado["etapa"] = "cierre"
+                    estado["fase"] = "esperando_cita"
+                    guardar_estado(chat_id, estado)
+                    registrar_mensaje(chat_id, mensaje)
+                    return obtener_respuesta_por_actividad(estado.get("actividad", "otros"), "cierre")
+
             else:
                 estado["intentos_aclaracion"] = 0  # Reinicia si responde correctamente
 
@@ -379,7 +386,7 @@ def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual):
                     registrar_mensaje(chat_id, mensaje)
                     return obtener_respuesta_por_actividad(estado.get("actividad", "otros"), "salida_ambigua")
 
-            elif intencion in ["pregunta_abierta", "mencion_permiso", "indefinido"]:
+            elif intencion in ["pregunta_abierta", "mencion_permiso", "afirmacion_suave", "indefinido"]:
                 # Se queda en aclaración, no avanza ni bloquea
                 guardar_estado(chat_id, estado)
                 registrar_mensaje(chat_id, mensaje)
@@ -393,18 +400,16 @@ def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual):
                 registrar_mensaje(chat_id, mensaje)
                 return obtener_respuesta_por_actividad(estado.get("actividad", "otros"), "permiso_no")
 
-            else:
-                # Si llega a decir algo que indica intención de cita
-                if any(p in mensaje.lower() for p in ["agenda", "visita", "quiero", "cita", "coordinar", "sí deseo", "sí quiero", "vamos", "hagamos"]):
-                    estado["intentos_aclaracion"] = 0  # ✅ Reinicia si responde bien
-                    estado["etapa"] = "cierre"
-                    estado["fase"] = "esperando_cita"
-                    guardar_estado(chat_id, estado)
-                    registrar_mensaje(chat_id, mensaje)
-                    return obtener_respuesta_por_actividad(
-                        estado.get("actividad", "otros"),
-                        determinar_siguiente_etapa(estado, mensaje)[0]
-                    )
+            elif intencion in ["afirmacion_suave", "cita_implicita"]:
+                estado["intentos_aclaracion"] = 0  # ✅ Reinicia si responde bien
+                estado["etapa"] = "cierre"
+                estado["fase"] = "esperando_cita"
+                guardar_estado(chat_id, estado)
+                registrar_mensaje(chat_id, mensaje)
+                return obtener_respuesta_por_actividad(
+                    estado.get("actividad", "otros"),
+                    "cierre"
+                )
 
         # 🎯 Determinar siguiente etapa de forma estricta
         nueva_etapa, nueva_fase = determinar_siguiente_etapa(estado, mensaje)
