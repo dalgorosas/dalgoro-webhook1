@@ -527,12 +527,15 @@ def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual):
             observaciones = f"Mensaje original: {mensaje}"
 
             # Registrar siempre, aunque los campos estén vacíos
+            etapa_actual = estado.get("etapa", "")
+            mensaje_observacion = f"Mensaje original: {mensaje}" if etapa_actual in ["cierre", "aclaracion_cierre"] else ""
+
             registrar_cita(
                 chat_id=chat_id,
                 fecha=fecha,
                 hora=hora,
                 ubicacion=ubicacion,
-                mensaje=observaciones,
+                mensaje=mensaje_observacion,
                 estado=estado
             )
 
