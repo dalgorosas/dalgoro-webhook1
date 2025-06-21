@@ -477,25 +477,24 @@ def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual):
         # 📌 Detectar y registrar cita, aunque esté incompleta, en etapa 'cierre' o 'aclaracion_cierre'
         if estado["etapa"] in ["cierre", "aclaracion_cierre"]:
             cita = extraer_fecha_y_hora(mensaje)
-            logger.info("📅 Evaluando mensaje para registrar cita. Fecha=%s, Hora=%s, Ubicacion=%s", cita.get("fecha"), cita.get("hora"), cita.get("ubicacion"))
+            logger.info("📅 Evaluando mensaje para registrar cita. Fecha=%s, Hora=%s, Ubicación=%s", cita.get("fecha"), cita.get("hora"), cita.get("ubicacion"))
 
             fecha = cita.get("fecha", "")
             hora = cita.get("hora", "")
             ubicacion = cita.get("ubicacion", "")
-            modalidad = "oficina" if "oficina" in mensaje.lower() else "finca" if "finca" in mensaje.lower() else ""
-
             observaciones = f"Mensaje original: {mensaje}"
 
+            # Registrar siempre, aunque los campos estén vacíos
             registrar_cita(
                 chat_id=chat_id,
                 fecha=fecha,
                 hora=hora,
                 ubicacion=ubicacion,
-                mensaje=mensaje,
+                mensaje=observaciones,
                 estado=estado
             )
 
-            # Validación para avanzar solo si se obtuvo fecha y hora
+            # Si fecha y hora están completas, avanzamos a 'agradecimiento'
             if fecha and hora:
                 estado["etapa"] = "agradecimiento"
                 estado["fase"] = "cita_registrada"
@@ -505,7 +504,7 @@ def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual):
                 return obtener_respuesta_por_actividad(estado.get("actividad", "otros"), "agradecimiento")
 
             else:
-                logger.warning("⚠️ Cita incompleta. Faltan datos. Se registró igual pero se solicita aclaración.")
+                # Aún falta al menos un dato. Volver a pedirlos
                 estado["etapa"] = "aclaracion_cierre"
                 estado["fase"] = "esperando_cita"
                 guardar_estado(chat_id, estado)
