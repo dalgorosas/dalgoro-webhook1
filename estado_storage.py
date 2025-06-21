@@ -47,16 +47,16 @@ Conversacion = Query()
 
 def obtener_estado(chat_id):
     logger.debug("🔎 Buscando estado para: %s", chat_id)
-    resultado = db.get(Conversacion.chat_id == chat_id)
+    raw_resultado = db.get(Conversacion.chat_id == chat_id)
+    resultado = dict(raw_resultado) if raw_resultado else None
 
     if resultado:
         if "ultima_interaccion" in resultado:
             resultado["ultima_interaccion"] = isoparse(resultado["ultima_interaccion"])
         if "intentos_aclaracion" not in resultado:
-            resultado["intentos_aclaracion"] = 0  # Añadir campo si no existe
+            resultado["intentos_aclaracion"] = 0
         logger.info("✅ Estado encontrado: %s", resultado)
         return resultado
-
     else:
         nuevo = {
             "actividad": None,
