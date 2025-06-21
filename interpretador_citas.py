@@ -4,6 +4,8 @@ from dateparser.search import search_dates
 from lexico import EXPRESIONES_TIEMPO, EXPRESIONES_UBICACION
 from zona_horaria import ZONA_HORARIA_EC
 import logging
+from datetime import timedelta
+
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -55,10 +57,27 @@ def normalizar_expresiones_comunes(texto):
         "en dos días": "pasado mañana"
     }
     reemplazos.update({
-    "podemos vernos a las 10": "a las 10",
-    "quedamos para el jueves": "jueves",
-    "nos reunimos el viernes": "viernes",
-    "veámonos a las 3": "a las 3",
+        "tipo ": "a las ",
+        "como a las ": "a las ",
+        "como a ": "a las ",
+        "a eso de las ": "a las ",
+        "a eso de ": "a las ",
+        "más o menos a las ": "a las ",
+        "más o menos a ": "a las ",
+        "por la tarde del ": "",  # se espera que ya haya una referencia de día
+        "por la mañana del ": "",
+        "cuando amanezca": "a las 06:00",
+        "en la tarde noche": "a las 18:00",
+        "cuando pase el almuerzo": "a las 15:00",
+        "al terminar la jornada": "a las 17:00",
+        "mañana tipo ": "mañana a las ",
+        "hoy mismo a las ": "hoy a las ",
+        "mañana después del desayuno": "mañana a las 10:00",
+        "media mañana": "a las 10:30",
+        "media tarde": "a las 16:00",
+        "antes del medio día": "a las 11:00",
+        "el lunes a primera hora": "lunes a las 07:00",
+        "a las 7 u 8 de la noche": "a las 19:30",
     })
 
     texto_normalizado = texto.lower()
@@ -70,7 +89,9 @@ def normalizar_expresiones_comunes(texto):
 # 🎯 Función principal
 def extraer_fecha_y_hora(texto):
     texto = normalizar_expresiones_comunes(texto)
-    ubicacion = None  # Inicializar para evitar errores
+    ubicacion = None
+    fecha_detectada = None
+    hora_detectada = None
 
     # Detección anticipada de ubicación
     for expr in EXPRESIONES_UBICACION:
@@ -114,6 +135,29 @@ def extraer_fecha_y_hora(texto):
             "ubicacion": ubicacion
         }
 
+    # Interpretación de frases informales si aún no se detecta hora
+    if not hora_detectada:
+        if "y media" in texto:
+            hora_detectada = "12:30"
+        elif "y cuarto" in texto:
+            hora_detectada = "12:15"
+        elif "al mediodía" in texto or "medio día" in texto:
+            hora_detectada = "12:00"
+        elif "medianoche" in texto:
+            hora_detectada = "00:00"
+        elif "media mañana" in texto:
+            hora_detectada = "10:30"
+        elif "media tarde" in texto:
+            hora_detectada = "16:00"
+        elif "temprano" in texto:
+            hora_detectada = "08:00"
+        elif "tarde noche" in texto:
+            hora_detectada = "18:00"
+        elif "noche" in texto:
+            hora_detectada = "20:00"
+        elif "mañana" in texto:
+            hora_detectada = "09:00"
+
     # Fallback manual con expresiones regulares
     hora_detectada = None
     for patron in patrones_hora_ext:
@@ -130,22 +174,24 @@ def extraer_fecha_y_hora(texto):
                 break
             except Exception:
                 continue
-
-    # Interpretación de frases comunes adicionales
-    if "y media" in texto:
-        hora_detectada = "12:30"
-    elif "al mediodía" in texto or "medio día" in texto:
-        hora_detectada = "12:00"
-    elif "medianoche" in texto:
-        hora_detectada = "00:00"
-    elif "y cuarto" in texto:
-        hora_detectada = "12:15"
+    
+    # Si se menciona un día específico, intenta calcular la próxima fecha correspondiente
+    dias_semana = {
+        "lunes": 0, "martes": 1, "miércoles": 2, "miercoles": 2,
+        "jueves": 3, "viernes": 4, "sábado": 5, "sabado": 5, "domingo": 6
+    }
+    for dia_texto, indice in dias_semana.items():
+        if dia_texto in texto:
+            hoy = datetime.now(ZONA_HORARIA_EC)
+            dias_a_sumar = (indice - hoy.weekday() + 7) % 7 or 7
+            fecha_detectada = (hoy + timedelta(days=dias_a_sumar)).strftime("%Y-%m-%d")
+            break
 
     hoy = datetime.now(ZONA_HORARIA_EC)
-    fecha_detectada = None
     for patron in patrones_fecha_ext:
         if re.search(patron, texto, re.IGNORECASE):
-            fecha_detectada = hoy.strftime("%Y-%m-%d")
+            if not fecha_detectada:
+                fecha_detectada = hoy.strftime("%Y-%m-%d")
             break
 
     if fecha_detectada or hora_detectada:
@@ -154,10 +200,76 @@ def extraer_fecha_y_hora(texto):
         elif hora_detectada and not fecha_detectada:
             logger.info("📅 Se detectó hora pero no fecha: se asume fecha de hoy por defecto.")
 
-        resultado = {
+        return {
             "fecha": fecha_detectada or hoy.strftime("%Y-%m-%d"),
             "hora": hora_detectada or "09:00",
-            "ubicacion": ubicacion
+            "ubicacion": ubicacion,
+            "observacion": texto  # texto ya normalizado
         }
-        logger.debug("🔍 Patrón de hora encontrado: %s", patron)
-        return resultado
+
+    # 🚫 Si no se detectó nada, retornar diccionario vacío
+    logger.warning("⚠️ No se detectaron fecha ni hora válidas en el texto: %s", texto)
+    return {}
+
+if __name__ == "__main__":
+    from pprint import pprint
+
+    pruebas_fecha_hora = [
+        "mañana al mediodía",
+        "pasado mañana a las 9",
+        "nos vemos el viernes",
+        "pueden venir a las 3 de la tarde",
+        "quiero cita el martes a las 10",
+        "me gustaría que vengan en la mañana",
+        "esta noche está bien",
+        "al amanecer del jueves",
+        "después del almuerzo",
+        "en dos días por la tarde",
+        "nos vemos a primera hora",
+        "quedamos para el lunes temprano",
+        "jueves a las 14:00",
+        "viernes",
+        "mañana",
+        "al mediodía",
+        "a las 10",
+        "el sábado por la mañana",
+        "el domingo a eso de las 7",
+        "el miércoles como a las 11",
+        "por la tarde del lunes",
+        "al terminar la jornada",
+        "después de las 5",
+        "a eso de las 3pm",
+        "a la hora del almuerzo",
+        "tipo 10 y media",
+        "a primera hora del martes",
+        "cuando amanezca",
+        "en la tarde noche",
+        "cuando pase el almuerzo",
+        "en la noche del domingo",
+        "mañana a las 8am",
+        "pasado mañana por la noche",
+        "el viernes en la tarde",
+        "el lunes en la noche",
+        "el jueves después del almuerzo",
+        "sábado tipo 3 de la tarde",
+        "en una semana a las 4",
+        "el lunes a primera hora",
+        "el martes antes del medio día",
+        "mañana tipo 10",
+        "hoy mismo a las 3",
+        "mañana después del desayuno",
+        "cuando tengan un espacio el viernes",
+        "a las 7 u 8 de la noche",
+        "a media mañana",
+        "el domingo temprano",
+        "el lunes a eso de las 10",
+        "el jueves a media tarde"
+    ]
+
+
+    print("\n🔍 PRUEBAS EXTRAER FECHA Y HORA:")
+    for texto in pruebas_fecha_hora:
+        resultado = extraer_fecha_y_hora(texto)
+        print(f"{texto} →")
+        pprint(resultado)
+        print("-" * 50)

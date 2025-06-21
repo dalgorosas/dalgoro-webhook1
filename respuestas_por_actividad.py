@@ -1,3 +1,4 @@
+import difflib
 
 RESPUESTA_INICIAL = """
 👋 ¡Hola! Le saluda *DALGORO - Innovación y Sostenibilidad* 🌿
@@ -259,29 +260,67 @@ def detectar_actividad(texto):
     return None
 
 PERMISOS_SI = [
-    "sí tengo", "ya tengo", "cuento con permiso", "cuento con registro", "sí contamos", "sí, tengo", 
-    "tengo permiso", "sí", "sí tengo los papeles", "sí tengo la licencia", "sí tengo el permiso",
-    "sí cuento con eso", "sí cuento con el registro", "sí tengo eso al día", 
-    "mis papeles están en regla", "sí, ya está hecho", "ya tengo todo", 
-    "sí me lo aprobaron", "me lo dieron hace tiempo", "ya está aprobado", 
-    "ya está legalizado", "sí, está vigente", "sí está al día", 
-    "sí, lo tengo actualizado", "sí, me lo entregaron", "sí está en orden", 
-    "tengo los documentos listos", "ya tengo todo en regla", 
-    "sí tengo todo en regla", "sí, todo está en orden", "ya está todo aprobado", "sí, ya está legalizado"
-
+    "sí tengo", "ya tengo", "ya lo tengo", "ya lo hice", "ya está listo",
+    "cuento con permiso", "cuento con el registro", "ya tengo el registro",
+    "sí contamos", "sí, tengo", "tengo permiso", "tengo el permiso",
+    "sí tengo los papeles", "sí tengo la licencia", "sí tengo el permiso",
+    "sí cuento con eso", "sí cuento con el registro", "sí tengo eso al día",
+    "mis papeles están en regla", "sí, ya está hecho", "ya tengo todo",
+    "sí me lo aprobaron", "me lo dieron hace tiempo", "ya está aprobado",
+    "ya está legalizado", "ya está aprobado por el ministerio",
+    "sí, está vigente", "sí está al día", "sí, lo tengo actualizado",
+    "sí, me lo entregaron", "sí está en orden", "sí tengo todo en orden",
+    "tengo los documentos listos", "ya tengo todo en regla",
+    "sí tengo todo en regla", "sí, todo está en orden", "ya está todo aprobado",
+    "sí, ya está legalizado", "está al día", "ya está aprobado y firmado",
+    "lo hice hace rato", "eso ya está hecho", "lo gestioné hace tiempo",
+    "eso ya está listo", "ya lo tramité", "sí ya cumplí", "ya está completo",
+    "sí tengo todo lo que piden", "todo está al día", "todo está aprobado",
+    "ya lo tengo desde antes", "sí, ya cumplimos con eso", "ya fue aprobado",
+    "sí, eso ya lo tengo", "sí, ya me lo entregaron", "todo está como debe ser",
+    "sí tengo todo legal", "sí, todo está legalizado", "sí tengo todos los papeles"
 ]
+import difflib
+
+def contiene_permiso_si(texto, umbral=0.85):
+    texto = texto.lower()
+    for frase in PERMISOS_SI:
+        frase = frase.lower()
+        if frase in texto:
+            return True
+        similitud = difflib.SequenceMatcher(None, texto, frase).ratio()
+        if similitud >= umbral:
+            return True
+    return False
 
 PERMISOS_NO = [
-    "no tengo", "no contamos", "aún no", "todavía no", "ninguno", "no", 
-    "no tengo ninguno", "no cuento con", "aún no he sacado", "no me lo han dado", 
-    "todavía no lo tramito", "no está hecho", "aún no empiezo", "no tengo los papeles", 
-    "no he hecho el trámite", "no tengo ese permiso", "no tengo el registro", 
-    "me falta sacar eso", "estoy en eso", "me falta eso", "no lo he gestionado", 
-    "no me han aprobado nada", "nunca he hecho ese trámite", 
-    "no me han dado nada", "no está legalizado", "no tengo nada aún",
-    "no he tramitado", "no está hecho aún", "estoy por comenzar", "no tengo todavía"
-
+    "no tengo", "no tengo todavía", "todavía no", "aún no", "no contamos", "ninguno", "no",
+    "no tengo ninguno", "no cuento con", "aún no he sacado", "aún no saco eso",
+    "todavía no lo tramito", "no está hecho", "no he tramitado", "no está hecho aún",
+    "no he hecho nada", "no he hecho el trámite", "no tengo los papeles", "no tengo ese permiso",
+    "no tengo el registro", "me falta sacar eso", "me falta eso", "no lo he gestionado",
+    "no me han aprobado nada", "no me han dado nada", "nunca he hecho ese trámite",
+    "no está legalizado", "no tengo nada aún", "no tengo todavía eso", "estoy por comenzar",
+    "estoy en eso", "me falta comenzar", "recién voy a empezar", "recién voy a tramitar",
+    "no he iniciado eso", "no tengo nada de eso", "no tengo nada listo", "no he hecho ese proceso",
+    "no he movido nada aún", "todavía no lo hago", "no tengo permiso todavía",
+    "todavía no tengo eso", "recién estoy averiguando", "recién estoy viendo",
+    "no he sacado ese papel", "me falta hacer eso", "todavía no tramito nada",
+    "no tengo lo del ministerio", "no tengo ningún documento", "no tengo esos papeles",
+    "eso aún no lo tengo", "no tengo ese documento", "no tengo ni idea de eso",
+    "no tengo ningún trámite hecho", "no tengo nada aprobado aún"
 ]
+
+def contiene_permiso_no(texto, umbral=0.85):
+    texto = texto.lower()
+    for frase in PERMISOS_NO:
+        frase = frase.lower()
+        if frase in texto:
+            return True
+        similitud = difflib.SequenceMatcher(None, texto, frase).ratio()
+        if similitud >= umbral:
+            return True
+    return False
 
 def contiene_permiso_si(texto):
     texto = texto.lower()
@@ -311,3 +350,13 @@ for actividad in FLUJOS_POR_ACTIVIDAD:
     FLUJOS_POR_ACTIVIDAD[actividad]["salida_ambigua"] = (
         "🙏 Entiendo que necesitas más tiempo para decidirlo. Cuando estés listo, puedes escribirnos y retomamos la conversación sin problema. ¡Gracias por tu interés en DALGORO! 🌿"
     )
+
+if __name__ == "__main__":
+    pruebas_si = ["sí tengo los papeles", "ya tengo todo en regla", "sí, ya está hecho"]
+    pruebas_no = ["no tengo todavía", "aún no empiezo", "no me lo han aprobado"]
+
+    for texto in pruebas_si:
+        print(f"{texto} → contiene_permiso_si: {contiene_permiso_si(texto)}")
+
+    for texto in pruebas_no:
+        print(f"{texto} → contiene_permiso_no: {contiene_permiso_no(texto)}")
