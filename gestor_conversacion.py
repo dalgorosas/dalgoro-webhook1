@@ -160,23 +160,6 @@ def determinar_siguiente_etapa(estado_actual, mensaje):
         else:
             return "aclaracion_permiso_no", "esperando_cita"
 
-    elif etapa == "aclaracion_permiso_no":
-        clasificacion = clasificar_permiso(mensaje)
-        intencion = detectar_intencion(mensaje)
-
-        if clasificacion == "no":
-            return "permiso_no", "confirmado"
-        elif clasificacion == "si":
-            return "cierre", "esperando_cita"
-        elif intencion == "cita_implicita":
-            return "cierre", "esperando_cita"
-        elif intencion in ["pregunta_abierta", "mencion_permiso"]:
-            return "aclaracion_permiso_no", "esperando_cita"
-        elif intencion in ["negativo_fuerte", "ofensivo"]:
-            return "salida_amable", "cerrado_amablemente"
-        else:
-            return "aclaracion_permiso_no", "esperando_cita"
-
     elif etapa == "cierre":
         if extraer_fecha_y_hora(mensaje):
             return "agradecimiento", "cita_registrada"
