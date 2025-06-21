@@ -151,9 +151,7 @@ def determinar_siguiente_etapa(estado_actual, mensaje):
             return "permiso_no", "confirmado"
         elif clasificacion == "si":
             return "cierre", "esperando_cita"
-        elif intencion == "afirmacion_suave":
-            return "cierre", "esperando_cita"
-        elif intencion == "cita_implicita":
+        elif intencion in ["afirmacion_suave", "cita_implicita"]:
             return "cierre", "esperando_cita"
         elif intencion in ["pregunta_abierta", "mencion_permiso"]:
             return "aclaracion_permiso_no", "esperando_cita"
@@ -390,11 +388,24 @@ def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual):
                     registrar_mensaje(chat_id, mensaje)
                     return obtener_respuesta_por_actividad(estado.get("actividad", "otros"), "salida_ambigua")
 
-            elif intencion in ["pregunta_abierta", "mencion_permiso", "afirmacion_suave", "indefinido"]:
-                # Se queda en aclaración, no avanza ni bloquea
+            elif intencion == "afirmacion_suave":
+                estado["intentos_aclaracion"] = 0  # ✅ Reinicia contador
+                estado["etapa"] = "cierre"
+                estado["fase"] = "esperando_cita"
                 guardar_estado(chat_id, estado)
                 registrar_mensaje(chat_id, mensaje)
-                return obtener_respuesta_por_actividad(estado.get("actividad", "otros"), "aclaracion_permiso_no")
+                return obtener_respuesta_por_actividad(
+                    estado.get("actividad", "otros"),
+                    "cierre"
+                )
+
+            elif intencion in ["pregunta_abierta", "mencion_permiso", "indefinido"]:
+                guardar_estado(chat_id, estado)
+                registrar_mensaje(chat_id, mensaje)
+                return obtener_respuesta_por_actividad(
+                    estado.get("actividad", "otros"),
+                    "aclaracion_permiso_no"
+                )
 
             elif intencion == "reactivacion":
                 estado["etapa"] = "permiso_no"
