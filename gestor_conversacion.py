@@ -447,7 +447,7 @@ def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual):
                 logger.warning("🤖 No se pudo recuperar con IA. Usando respuesta por defecto.")
                 return obtener_respuesta_por_actividad("otros", "introduccion")
 
-# ⛔ No saltarse etapas: permitir solo transiciones válidas
+        # ⛔ No saltarse etapas: permitir solo transiciones válidas
         etapas_definidas = list(flujo_definido.keys())
         indice_actual = etapas_definidas.index(etapa_actual) if etapa_actual in etapas_definidas else -1
         indice_nueva = etapas_definidas.index(nueva_etapa) if nueva_etapa in etapas_definidas else -1
@@ -474,41 +474,43 @@ def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual):
             estado["etapa"] = nueva_etapa
             estado["fase"] = nueva_fase      
         
-        # 📌 Detectar y registrar cita SOLO si YA estamos en etapa 'cierre' o 'aclaracion_cierre'
+        # 📌 Detectar y registrar cita, aunque esté incompleta, en etapa 'cierre' o 'aclaracion_cierre'
         if estado["etapa"] in ["cierre", "aclaracion_cierre"]:
             cita = extraer_fecha_y_hora(mensaje)
-            logger.info("📅 Cita detectada: fecha=%s, hora=%s, ubicacion=%s", cita.get("fecha"), cita.get("hora"), cita.get("ubicacion"))
+            logger.info("📅 Evaluando mensaje para registrar cita. Fecha=%s, Hora=%s, Ubicacion=%s", cita.get("fecha"), cita.get("hora"), cita.get("ubicacion"))
 
-            if isinstance(cita, dict) and "fecha" in cita and "hora" in cita:
-                modalidad = "oficina" if "oficina" in mensaje.lower() else "finca" if "finca" in mensaje.lower() else ""
-                lugar = cita.get("ubicacion", "")
-                observaciones = f"Mensaje original: {mensaje}"
-                logger.info("📤 Enviando cita a hoja de cálculo: chat_id=%s, fecha=%s, hora=%s, modalidad=%s, lugar=%s",
-                chat_id, cita["fecha"], cita["hora"], modalidad, lugar)
+            fecha = cita.get("fecha", "")
+            hora = cita.get("hora", "")
+            ubicacion = cita.get("ubicacion", "")
+            modalidad = "oficina" if "oficina" in mensaje.lower() else "finca" if "finca" in mensaje.lower() else ""
 
-                registrar_cita(
-                    chat_id=chat_id,
-                    fecha=cita["fecha"],
-                    hora=cita["hora"],
-                    ubicacion=lugar,
-                    mensaje=mensaje,
-                    estado=estado
-                )
+            observaciones = f"Mensaje original: {mensaje}"
 
+            registrar_cita(
+                chat_id=chat_id,
+                fecha=fecha,
+                hora=hora,
+                ubicacion=ubicacion,
+                mensaje=mensaje,
+                estado=estado
+            )
+
+            # Validación para avanzar solo si se obtuvo fecha y hora
+            if fecha and hora:
                 estado["etapa"] = "agradecimiento"
                 estado["fase"] = "cita_registrada"
                 estado["ultimo_mensaje_procesado"] = mensaje
                 guardar_estado(chat_id, estado)
                 registrar_mensaje(chat_id, mensaje)
-                return obtener_respuesta_por_actividad(actividad_actual, "agradecimiento")
+                return obtener_respuesta_por_actividad(estado.get("actividad", "otros"), "agradecimiento")
 
             else:
-                logger.warning("⚠️ No se pudo detectar una cita válida en el mensaje: %s", mensaje)
+                logger.warning("⚠️ Cita incompleta. Faltan datos. Se registró igual pero se solicita aclaración.")
                 estado["etapa"] = "aclaracion_cierre"
                 estado["fase"] = "esperando_cita"
                 guardar_estado(chat_id, estado)
                 registrar_mensaje(chat_id, mensaje)
-                return obtener_respuesta_por_actividad(actividad_actual, "aclaracion_cierre")
+                return obtener_respuesta_por_actividad(estado.get("actividad", "otros"), "aclaracion_cierre")
 
         if estado["etapa"] == "aclaracion_cierre":
             cita = extraer_fecha_y_hora(mensaje)
