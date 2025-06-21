@@ -20,7 +20,9 @@ EXPRESIONES_AMBIGUAS = [
 EXPRESIONES_AFIRMACION_SUAVE = [
     "sí me gustaría", "sí quiero", "me interesa", "quiero saber más", "claro que sí",
     "por supuesto", "sí por favor", "me gustaría conocer", "me gustaría que me cuenten",
-    "sí deseo", "sí deseo saber", "sí deseo información"
+    "sí deseo", "sí deseo saber", "sí deseo información",
+    "si quiero que me cuentes", "sí me gustaría saber", "quiero saber cómo funciona",
+    "me interesa saber", "quiero conocer el proceso", "me gustaría entender"
 ]
 
 EXPRESIONES_CITA = [
