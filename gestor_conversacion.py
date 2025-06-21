@@ -8,6 +8,7 @@ from control_antirrepeticion import mensaje_duplicado, registrar_mensaje, bloque
 from google_sheets_utils import registrar_cita_en_hoja
 from google_sheets_utils import registrar_fallo_para_contacto
 from reconocedor_intenciones import detectar_intencion
+from respuestas_por_actividad import FLUJOS_POR_ACTIVIDAD
 from respuestas_por_actividad import (
     detectar_actividad,
     obtener_respuesta_por_actividad,
@@ -85,12 +86,19 @@ def determinar_siguiente_etapa(estado_actual, mensaje):
             return "aclaracion_introduccion", fase
         else:
             intencion = detectar_intencion(mensaje)
-            if intencion in ["mencion_permiso", "pregunta_abierta"]:
+
+            if intencion in ["afirmacion_suave", "cita_implicita"]:
+                return "cierre", "esperando_cita"
+
+            elif intencion in ["mencion_permiso", "pregunta_abierta"]:
                 return "aclaracion_introduccion", fase
-            elif intencion == "negativo_fuerte":
+
+            elif intencion == "negativo_ambiguo":
+                return "aclaracion_permiso_no", fase  # o la etapa que uses para ambigüedad
+
+            elif intencion in ["negativo_fuerte", "ofensivo"]:
                 return "salida_amable", "cerrado_amablemente"
-            elif intencion == "ofensivo":
-                return "salida_amable", "cerrado_amablemente"
+
             return "introduccion", fase
 
     elif etapa == "aclaracion_introduccion":
@@ -113,18 +121,21 @@ def determinar_siguiente_etapa(estado_actual, mensaje):
 
     elif etapa == "permiso_si":
         clasificacion = clasificar_permiso(mensaje)
+        intencion = detectar_intencion(mensaje)
+
         if clasificacion == "si":
+            return "cierre", "esperando_cita"
+        elif intencion in ["afirmacion_suave", "cita_implicita"]:
             return "cierre", "esperando_cita"
         elif clasificacion == "no":
             return "permiso_no", "confirmado"
         elif clasificacion == "mencion":
             return "aclaracion_permiso_si", "esperando_cita"
+        elif intencion in ["pregunta_abierta", "mencion_permiso"]:
+            return "aclaracion_permiso_si", "esperando_cita"
+        elif intencion in ["negativo_fuerte", "ofensivo"]:
+            return "salida_amable", "cerrado_amablemente"
         else:
-            intencion = detectar_intencion(mensaje)
-            if intencion in ["pregunta_abierta", "mencion_permiso"]:
-                return "aclaracion_permiso_si", "esperando_cita"
-            elif intencion in ["negativo_fuerte", "ofensivo"]:
-                return "salida_amable", "cerrado_amablemente"
             return "aclaracion_permiso_si", "esperando_cita"
 
     elif etapa == "aclaracion_permiso_si":
@@ -148,18 +159,21 @@ def determinar_siguiente_etapa(estado_actual, mensaje):
 
     elif etapa == "permiso_no":
         clasificacion = clasificar_permiso(mensaje)
+        intencion = detectar_intencion(mensaje)
+
         if clasificacion == "no":
             return "cierre", "esperando_cita"
         elif clasificacion == "si":
             return "permiso_si", "confirmado"
+        elif intencion in ["afirmacion_suave", "cita_implicita"]:
+            return "cierre", "esperando_cita"
         elif clasificacion == "mencion":
             return "aclaracion_permiso_no", "esperando_cita"
+        elif intencion in ["pregunta_abierta", "mencion_permiso"]:
+            return "aclaracion_permiso_no", "esperando_cita"
+        elif intencion in ["negativo_fuerte", "ofensivo"]:
+            return "salida_amable", "cerrado_amablemente"
         else:
-            intencion = detectar_intencion(mensaje)
-            if intencion in ["pregunta_abierta", "mencion_permiso"]:
-                return "aclaracion_permiso_no", "esperando_cita"
-            elif intencion in ["negativo_fuerte", "ofensivo"]:
-                return "salida_amable", "cerrado_amablemente"
             return "aclaracion_permiso_no", "esperando_cita"
 
     elif etapa == "aclaracion_permiso_no":
@@ -188,6 +202,8 @@ def determinar_siguiente_etapa(estado_actual, mensaje):
                 return "cierre", "esperando_cita"
             elif intencion in ["pregunta_abierta", "mencion_permiso"]:
                 return "aclaracion_cierre", "esperando_cita"
+            elif intencion in ["negativo_fuerte", "ofensivo"]:
+                return "salida_amable", "cerrado_amablemente"
             return "aclaracion_cierre", "esperando_cita"
 
     elif etapa == "aclaracion_cierre":
@@ -195,14 +211,25 @@ def determinar_siguiente_etapa(estado_actual, mensaje):
             return "agradecimiento", "cita_registrada"
         else:
             intencion = detectar_intencion(mensaje)
+
             if intencion in ["afirmacion_suave", "cita_implicita"]:
                 return "cierre", "esperando_cita"
             elif intencion in ["pregunta_abierta", "mencion_permiso"]:
                 return "aclaracion_cierre", "esperando_cita"
-            return "aclaracion_cierre", "esperando_cita"
+            elif intencion in ["negativo_fuerte", "ofensivo"]:
+                return "salida_amable", "cerrado_amablemente"
+            else:
+                return "aclaracion_cierre", "esperando_cita"
 
     elif etapa == "agradecimiento":
         return "agradecimiento", "cita_registrada"
+
+    # ✅ Validación final de seguridad para evitar saltos no permitidos
+    actividad = estado_actual.get("actividad_detectada", "")
+    flujo = FLUJOS_POR_ACTIVIDAD.get(actividad, [])
+
+    if etapa and etapa not in flujo:
+        return "", "inicio"  # Reinicio forzado si etapa no es válida
 
     return etapa, fase
 
@@ -482,10 +509,6 @@ def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual):
             (etapa_actual == "cierre" and nueva_etapa == "agradecimiento") or
             (etapa_actual == "aclaracion_cierre" and nueva_etapa == "agradecimiento")
         )
-
-        if not transicion_valida:
-            logger.error("❌ Flujo inválido: intento de salto de '%s' a '%s' en %s", etapa_actual, nueva_etapa, actividad_actual)
-            return "🙏 Gracias por su mensaje. En breve le responderemos personalmente para coordinar su cita. 🌱"
 
         # ✅ Si todo está correcto, actualizar estado (permitiendo reentrar en cierre o aclaración)
         if (nueva_etapa != estado.get("etapa")) or (nueva_fase != estado.get("fase")) or (nueva_etapa in ["cierre", "aclaracion_cierre"]):

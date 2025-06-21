@@ -45,17 +45,22 @@ EXPRESIONES_AMBIGUAS = [
 
 EXPRESIONES_AFIRMACION_SUAVE = [
     "sí me interesa", "si me interesa", "me interesa",
-    "sí deseo", "si deseo", "deseo continuar",
-    "sí quiero", "si quiero", "quiero seguir",
+    "sí deseo", "si deseo", "deseo continuar", "deseo que me visiten",
+    "sí quiero", "si quiero", "quiero seguir", "quiero avanzar",
     "sí me gustaría", "si me gustaría", "me gustaría saber", "me gustaría continuar",
-    "me interesa saber", "me interesa conocer", "me interesa el proceso",
-    "quiero saber más", "quiero conocer el proceso", "quiero entender",
+    "me interesa saber", "me interesa conocer", "me interesa el proceso", "me interesa avanzar",
+    "quiero saber más", "quiero conocer el proceso", "quiero entender", "quiero información",
     "sí por favor", "sí claro", "claro que sí", "por supuesto", "cuéntame más",
     "me gustaría que me cuenten", "sí quiero que me cuentes", "sí deseo información",
-    "me encantaría", "quisiera", "sí quisiera", "si quisiera",
+    "me encantaría", "quisiera", "sí quisiera", "si quisiera", "quisiera más detalles",
     "sí estoy interesado", "estoy interesado", "me parece bien", "ok vamos", "sí quiero ayuda",
-    "sí quiero que vengan", "me gustaría avanzar", "me interesa avanzar",
-    "está bien", "sí gracias", "sí por favor", "perfecto", "de acuerdo", "acepto"
+    "sí quiero que vengan", "me gustaría avanzar", "sí acepto", "acepto la ayuda",
+    "está bien", "sí gracias", "perfecto", "de acuerdo", "acepto",
+    "me interesa mucho", "claro, por favor", "sí, deseo avanzar", "gracias, sí quiero continuar",
+    "me gustaría una visita", "me gustaría recibir asesoría", "quiero recibir asesoría",
+    "sí, deseo que me asesoren", "quiero agendar", "sí deseo agendar", "estoy de acuerdo", 
+    "cuenten conmigo", "ok, adelante", "sí, sigamos", "pueden continuar", "por favor, sigamos",
+    "vamos con eso", "sí, estoy convencido", "quiero su ayuda", "sí deseo acompañamiento"
 ]
 
 EXPRESIONES_CITA = [
@@ -85,26 +90,26 @@ Retorna:
 def detectar_intencion(texto):
     texto = texto.lower().strip()
 
-    if detectar_similitud(texto, EXPRESIONES_OFENSIVAS):
-        return "ofensivo"
+    if detectar_similitud(texto, EXPRESIONES_AFIRMACION_SUAVE):
+        return "afirmacion_suave"
+
+    if detectar_similitud(texto, EXPRESIONES_CITA):
+        return "cita_implicita"
+
+    if detectar_similitud(texto, EXPRESIONES_AMBIGUAS):
+        return "negativo_ambiguo"
 
     if detectar_similitud(texto, NEGATIVOS_FUERTES):
         return "negativo_fuerte"
 
-    if detectar_similitud(texto, EXPRESIONES_AMBIGUAS):
-        return "negativo_ambiguo"
+    if detectar_similitud(texto, EXPRESIONES_OFENSIVAS):
+        return "ofensivo"
 
     if detectar_similitud(texto, EXPRESIONES_REACTIVACION):
         return "reactivacion"
 
     if detectar_similitud(texto, ["permiso", "registro", "licencia", "documento", "papeles"]):
         return "mencion_permiso"
-
-    if detectar_similitud(texto, EXPRESIONES_CITA):
-        return "cita_implicita"
-
-    if detectar_similitud(texto, EXPRESIONES_AFIRMACION_SUAVE):
-        return "afirmacion_suave"
 
     if re.search(r"\b(cómo|qué|cuándo|dónde|para qué|puedo|necesito)\b", texto):
         return "pregunta_abierta"
