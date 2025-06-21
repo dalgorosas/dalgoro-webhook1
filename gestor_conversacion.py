@@ -127,6 +127,25 @@ def determinar_siguiente_etapa(estado_actual, mensaje):
                 return "salida_amable", "cerrado_amablemente"
             return "aclaracion_permiso_si", "esperando_cita"
 
+    elif etapa == "aclaracion_permiso_si":
+        clasificacion = clasificar_permiso(mensaje)
+        intencion = detectar_intencion(mensaje)
+
+        if clasificacion == "si":
+            return "cierre", "esperando_cita"
+        elif clasificacion == "no":
+            return "permiso_no", "confirmado"
+        elif intencion in ["afirmacion_suave", "cita_implicita"]:
+            return "cierre", "esperando_cita"
+        elif clasificacion == "mencion":
+            return "aclaracion_permiso_si", "esperando_cita"
+        elif intencion in ["pregunta_abierta", "mencion_permiso"]:
+            return "aclaracion_permiso_si", "esperando_cita"
+        elif intencion in ["negativo_fuerte", "ofensivo"]:
+            return "salida_amable", "cerrado_amablemente"
+        else:
+            return "aclaracion_permiso_si", "esperando_cita"
+
     elif etapa == "permiso_no":
         clasificacion = clasificar_permiso(mensaje)
         if clasificacion == "no":
@@ -165,10 +184,10 @@ def determinar_siguiente_etapa(estado_actual, mensaje):
             return "agradecimiento", "cita_registrada"
         else:
             intencion = detectar_intencion(mensaje)
-            if intencion in ["pregunta_abierta", "mencion_permiso"]:
+            if intencion in ["afirmacion_suave", "cita_implicita"]:
+                return "cierre", "esperando_cita"
+            elif intencion in ["pregunta_abierta", "mencion_permiso"]:
                 return "aclaracion_cierre", "esperando_cita"
-            elif intencion in ["negativo_fuerte", "ofensivo"]:
-                return "salida_amable", "cerrado_amablemente"
             return "aclaracion_cierre", "esperando_cita"
 
     elif etapa == "aclaracion_cierre":
@@ -176,10 +195,10 @@ def determinar_siguiente_etapa(estado_actual, mensaje):
             return "agradecimiento", "cita_registrada"
         else:
             intencion = detectar_intencion(mensaje)
-            if intencion in ["pregunta_abierta", "mencion_permiso"]:
+            if intencion in ["afirmacion_suave", "cita_implicita"]:
+                return "cierre", "esperando_cita"
+            elif intencion in ["pregunta_abierta", "mencion_permiso"]:
                 return "aclaracion_cierre", "esperando_cita"
-            elif intencion in ["negativo_fuerte", "ofensivo"]:
-                return "salida_amable", "cerrado_amablemente"
             return "aclaracion_cierre", "esperando_cita"
 
     elif etapa == "agradecimiento":
