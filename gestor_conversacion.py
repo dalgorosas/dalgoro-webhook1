@@ -216,7 +216,8 @@ def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual):
             return obtener_respuesta_por_actividad(estado.get("actividad", "otros"), estado.get("etapa", "introduccion"))
 
         # 🚫 Detección anticipada de desinterés o negativa persistente
-        if any(p in mensaje.lower() for p in NEGATIVOS_FUERTES):
+        # ⚠️ Evitar aplicar en etapa introduccion o aclaracion_introduccion (ej: "no tengo")
+        if estado.get("etapa") not in ["introduccion", "aclaracion_introduccion"] and any(p in mensaje.lower() for p in NEGATIVOS_FUERTES):
             estado["intentos_negativos"] = estado.get("intentos_negativos", 0) + 1
             logger.info("🚫 Cliente respondió con frase negativa. Intentos: %s", estado['intentos_negativos'])
             if estado["intentos_negativos"] >= 2:
