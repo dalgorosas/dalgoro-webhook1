@@ -151,8 +151,12 @@ def determinar_siguiente_etapa(estado_actual, mensaje):
             return "permiso_no", "confirmado"
         elif clasificacion == "si":
             return "cierre", "esperando_cita"
-        elif intencion in ["cita_implicita", "mencion_permiso", "pregunta_abierta"]:
+        elif intencion == "afirmacion_suave":
             return "cierre", "esperando_cita"
+        elif intencion == "cita_implicita":
+            return "cierre", "esperando_cita"
+        elif intencion in ["pregunta_abierta", "mencion_permiso"]:
+            return "aclaracion_permiso_no", "esperando_cita"
         elif intencion in ["negativo_fuerte", "ofensivo"]:
             return "salida_amable", "cerrado_amablemente"
         else:

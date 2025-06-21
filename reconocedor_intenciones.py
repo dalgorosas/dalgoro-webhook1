@@ -18,11 +18,15 @@ EXPRESIONES_AMBIGUAS = [
 ]
 
 EXPRESIONES_AFIRMACION_SUAVE = [
-    "sí me gustaría", "sí quiero", "me interesa", "quiero saber más", "claro que sí",
-    "por supuesto", "sí por favor", "me gustaría conocer", "me gustaría que me cuenten",
-    "sí deseo", "sí deseo saber", "sí deseo información",
-    "si quiero que me cuentes", "sí me gustaría saber", "quiero saber cómo funciona",
-    "me interesa saber", "quiero conocer el proceso", "me gustaría entender"
+    "sí me interesa", "si me interesa",
+    "sí deseo", "si deseo",
+    "sí quiero", "si quiero",
+    "sí me gustaría", "si me gustaría",
+    "me interesa", "me interesa saber", "me gustaría saber", "me gustaría conocer",
+    "quiero saber más", "quiero conocer el proceso", "quiero entender",
+    "claro que sí", "por supuesto", "sí por favor", "me gustaría que me cuenten",
+    "si quiero que me cuentes", "sí deseo saber", "sí deseo información",
+    "me encantaría", "quisiera", "sí quisiera", "si quisiera"
 ]
 
 EXPRESIONES_CITA = [
@@ -58,3 +62,8 @@ def detectar_intencion(texto):
         return "pregunta_abierta"
 
     return "indefinido"
+
+if __name__ == "__main__":
+    pruebas = ["si me interesa", "sí quiero", "me gustaría saber", "quisiera", "si deseo"]
+    for texto in pruebas:
+        print(f"{texto} → {detectar_intencion(texto)}")
