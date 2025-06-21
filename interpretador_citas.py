@@ -54,13 +54,13 @@ def normalizar_expresiones_comunes(texto):
         "a primera hora": "hoy a las 07:00",
         "en dos días": "pasado mañana"
     }
-    reemplazos.update = {
+    reemplazos.update({
     "podemos vernos a las 10": "a las 10",
     "quedamos para el jueves": "jueves",
     "nos reunimos el viernes": "viernes",
     "veámonos a las 3": "a las 3",
-    }
-    
+    })
+
     texto_normalizado = texto.lower()
     for frase, sustituto in reemplazos.items():
         texto_normalizado = texto_normalizado.replace(frase, sustituto)
@@ -149,6 +149,11 @@ def extraer_fecha_y_hora(texto):
             break
 
     if fecha_detectada or hora_detectada:
+        if fecha_detectada and not hora_detectada:
+            logger.info("⏱ Se detectó fecha pero no hora: se asume 09:00 por defecto.")
+        elif hora_detectada and not fecha_detectada:
+            logger.info("📅 Se detectó hora pero no fecha: se asume fecha de hoy por defecto.")
+
         resultado = {
             "fecha": fecha_detectada or hoy.strftime("%Y-%m-%d"),
             "hora": hora_detectada or "09:00",
@@ -156,6 +161,3 @@ def extraer_fecha_y_hora(texto):
         }
         logger.debug("🔍 Patrón de hora encontrado: %s", patron)
         return resultado
-
-    logger.debug("🧪 [DEBUG - sin cita detectable] %s → None", texto)
-    return None

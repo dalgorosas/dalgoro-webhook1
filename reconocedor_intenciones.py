@@ -34,28 +34,47 @@ EXPRESIONES_CITA = [
     "pueden venir", "pueden pasar", "me gustaría que vengan"
 ]
 
+"""
+Detecta la intención de un mensaje de texto del usuario.
+
+Parámetros:
+    texto (str): El mensaje recibido del cliente.
+
+Retorna:
+    str: Una de las siguientes etiquetas según la intención detectada:
+        - "ofensivo"
+        - "negativo_fuerte"
+        - "negativo_ambiguo"
+        - "reactivacion"
+        - "mencion_permiso"
+        - "cita_implicita"
+        - "afirmacion_suave"
+        - "pregunta_abierta"
+        - "indefinido"
+"""
+
 def detectar_intencion(texto):
     texto = texto.lower().strip()
 
-    if any(p in texto for p in EXPRESIONES_OFENSIVAS):
+    if any(re.search(rf"\b{re.escape(p)}\b", texto) for p in EXPRESIONES_OFENSIVAS):
         return "ofensivo"
 
-    if any(p in texto for p in NEGATIVOS_FUERTES):
+    if any(re.search(rf"\b{re.escape(p)}\b", texto) for p in NEGATIVOS_FUERTES):
         return "negativo_fuerte"
 
-    if any(p in texto for p in EXPRESIONES_AMBIGUAS):
+    if any(re.search(rf"\b{re.escape(p)}\b", texto) for p in EXPRESIONES_AMBIGUAS):
         return "negativo_ambiguo"
 
-    if any(p in texto for p in EXPRESIONES_REACTIVACION):
+    if any(re.search(rf"\b{re.escape(p)}\b", texto) for p in EXPRESIONES_REACTIVACION):
         return "reactivacion"
 
-    if any(p in texto for p in ["permiso", "registro", "licencia", "documento", "papeles"]):
+    if any(re.search(rf"\b{re.escape(p)}\b", texto) for p in ["permiso", "registro", "licencia", "documento", "papeles"]):
         return "mencion_permiso"
 
-    if any(p in texto for p in EXPRESIONES_CITA):
+    if any(re.search(rf"\b{re.escape(p)}\b", texto) for p in EXPRESIONES_CITA):
         return "cita_implicita"
 
-    if any(p in texto for p in EXPRESIONES_AFIRMACION_SUAVE):
+    if any(re.search(rf"\b{re.escape(p)}\b", texto) for p in EXPRESIONES_AFIRMACION_SUAVE):
         return "afirmacion_suave"
 
     if re.search(r"\b(cómo|qué|cuándo|dónde|para qué|puedo|necesito)\b", texto):
@@ -64,6 +83,10 @@ def detectar_intencion(texto):
     return "indefinido"
 
 if __name__ == "__main__":
-    pruebas = ["si me interesa", "sí quiero", "me gustaría saber", "quisiera", "si deseo"]
+    pruebas = [
+        "si me interesa", "nos vemos el jueves", "me gustaría que vengan",
+        "disculpa no respondí", "maldito", "más adelante", "cuando pueden visitarme",
+        "permiso ambiental", "quiero retomar", "no gracias", "lárgate"
+    ]
     for texto in pruebas:
         print(f"{texto} → {detectar_intencion(texto)}")
