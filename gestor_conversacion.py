@@ -524,7 +524,7 @@ def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual):
             estado["fase"] = nueva_fase      
         
         # 📌 Solo procesar registro de cita si ya estábamos en etapa de cierre, no si recién entramos
-        if etapa_original in ["cierre", "aclaracion_cierre"]:
+        if estado.get("etapa") in ["cierre", "aclaracion_cierre"]:
 
             cita = extraer_fecha_y_hora(mensaje)
             logger.info("📅 Evaluando mensaje para registrar cita. Fecha=%s, Hora=%s, Ubicación=%s", cita.get("fecha"), cita.get("hora"), cita.get("ubicacion"))
