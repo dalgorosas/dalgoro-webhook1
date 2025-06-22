@@ -253,6 +253,7 @@ def bloquear_chat(chat_id, segundos=1.5):
 def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual):
     try:
         estado = obtener_estado_seguro(chat_id)
+        etapa_original = estado.get("etapa")  # ✅ Guardamos la etapa antes de cualquier cambio
 
         # 🛡️ Control de duplicados: se ejecuta ANTES de todo
         if bloqueo_activo(chat_id):
@@ -522,8 +523,9 @@ def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual):
             estado["etapa"] = nueva_etapa
             estado["fase"] = nueva_fase      
         
-        # 📌 Detectar y registrar cita, aunque esté incompleta, en etapa 'cierre' o 'aclaracion_cierre'
-        if estado["etapa"] in ["cierre", "aclaracion_cierre"]:
+        # 📌 Solo procesar registro de cita si ya estábamos en etapa de cierre, no si recién entramos
+        if etapa_original in ["cierre", "aclaracion_cierre"]:
+
             cita = extraer_fecha_y_hora(mensaje)
             logger.info("📅 Evaluando mensaje para registrar cita. Fecha=%s, Hora=%s, Ubicación=%s", cita.get("fecha"), cita.get("hora"), cita.get("ubicacion"))
 
