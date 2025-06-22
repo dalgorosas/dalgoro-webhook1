@@ -237,6 +237,7 @@ def registrar_cita_en_hoja(contacto, fecha_cita, hora, modalidad, lugar, observa
         # ✅ Registro
         nueva_fila = [contacto, fecha_cita, hora, modalidad, lugar, observaciones]
         logger.info("📝 Registrando nueva fila: %s", nueva_fila)
+        print("DEBUG HOJA --> Fila a registrar:", nueva_fila)
         hoja.append_row(nueva_fila)
         logger.info("✅ Cita registrada para %s en %s a las %s.", contacto, fecha_cita, hora)
 

@@ -54,6 +54,13 @@ def registrar_cita(chat_id, fecha, hora, ubicacion=None, mensaje="", estado=None
     numero_limpio = re.sub(r"\D", "", chat_id.split("@")[0])
 
     try:
+        print("DEBUG FINAL --> contacto:", numero_limpio)
+        print("DEBUG FINAL --> fecha:", fecha)
+        print("DEBUG FINAL --> hora:", hora)
+        print("DEBUG FINAL --> ubicacion:", ubicacion_segura)
+        print("DEBUG FINAL --> modalidad:", modalidad)
+        print("DEBUG FINAL --> observaciones:", mensaje_original)
+
         registrar_cita_en_hoja(
             contacto=numero_limpio,
             fecha_cita=fecha,
