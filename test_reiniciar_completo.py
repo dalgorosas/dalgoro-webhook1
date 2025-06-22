@@ -19,7 +19,13 @@ def obtener_hoja(nombre_hoja):
     return documento.worksheet(nombre_hoja)
 
 # Archivos locales
-ARCHIVOS_A_ELIMINAR = ["mensajes_recientes.json", "bloqueos.json", "estado_conversaciones.json", "estado_usuarios.json"]
+ARCHIVOS_A_ELIMINAR = [
+    "mensajes_recientes.json",
+    "bloqueos_temporales.json",  # <- nombre correcto del control antirrepetición
+    "estado_conversaciones.json",
+    "estado_usuarios.json"
+]
+
 # Ruta al archivo estado_usuarios.json dentro del proyecto
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ARCHIVO_A_VACIAR = os.path.join(BASE_DIR, "estado_usuarios.json")
@@ -31,6 +37,13 @@ for archivo in ARCHIVOS_A_ELIMINAR:
         logger.info("🧹 Archivo eliminado: %s", archivo)
     else:
         logger.info("ℹ️ Archivo no encontrado (ya estaba limpio): %s", archivo)
+
+# Verificación adicional para asegurarse que los archivos han sido eliminados
+for archivo in ARCHIVOS_A_ELIMINAR:
+    if os.path.exists(archivo):
+        logger.warning("⚠️ El archivo %s sigue existiendo. Revisa permisos o rutas.", archivo)
+    else:
+        logger.info("✅ Confirmado: %s fue eliminado correctamente.", archivo)
 
 # Vaciar contenido de estado_usuarios.json
 if os.path.exists(ARCHIVO_A_VACIAR):
