@@ -1,7 +1,8 @@
 from datetime import datetime
 from threading import Lock
 import time
-
+import re
+import logging
 from estado_storage import guardar_estado, obtener_estado_seguro
 from interpretador_citas import extraer_fecha_y_hora
 from control_antirrepeticion import mensaje_duplicado, registrar_mensaje, bloqueo_activo, activar_bloqueo
@@ -34,21 +35,22 @@ locks_chat = {}
 estado_conversaciones = {}
 
 def registrar_cita(chat_id, fecha, hora, ubicacion=None, mensaje="", estado=None):
-    logger.info("🗕️ Se registró una cita para %s: {'fecha': '%s', 'hora': '%s', 'ubicacion': '%s'}", chat_id, fecha, hora, ubicacion)
+    logger = logging.getLogger(__name__)
+
+    logger.info("🗕️ Se solicitó registrar una cita para %s: {'fecha': '%s', 'hora': '%s', 'ubicacion': '%s'}", chat_id, fecha, hora, ubicacion)
+
+    # 🛑 Validar etapa antes de registrar
+    etapa_actual = estado.get("etapa") if estado else ""
+    if etapa_actual not in ["cierre", "aclaracion_cierre"]:
+        logger.warning("⛔ Registro de cita cancelado. Etapa no permitida: %s", etapa_actual)
+        return
 
     ubicacion_segura = ubicacion or ""
     modalidad = "Finca" if "finca" in ubicacion_segura.lower() else "Oficina"
 
-    # ✅ Solo registrar el mensaje si proviene de la etapa 'cierre' o 'aclaracion_cierre'
-    etapa_actual = estado.get("etapa", "")
-    if etapa_actual in ["cierre", "aclaracion_cierre"]:
-        mensaje_original = mensaje or estado.get("ultimo_mensaje_procesado", "(sin mensaje)")
-    else:
-        mensaje_original = ""  # No registrar ningún mensaje como observación
+    # Solo en etapas válidas se usa el mensaje original
+    mensaje_original = mensaje or estado.get("ultimo_mensaje_procesado", "(sin mensaje)")
 
-    import re
-
-    # Limpia el número dejando solo dígitos
     numero_limpio = re.sub(r"\D", "", chat_id.split("@")[0])
 
     try:
