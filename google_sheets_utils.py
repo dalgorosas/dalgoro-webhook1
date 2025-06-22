@@ -227,6 +227,9 @@ def registrar_cita_en_hoja(contacto, fecha_cita, hora, modalidad, lugar, observa
                 logger.info("➡️ Cita duplicada detectada. No se registrará de nuevo.")
                 return
 
+        # 🧼 Limpieza del número de contacto
+        contacto = contacto.replace("@c.us", "").strip()
+        
         nueva_fila = [contacto, fecha_cita, hora, modalidad, lugar, observaciones]
         logger.info("📝 Registrando nueva fila: %s", nueva_fila)
         hoja.append_row(nueva_fila)
