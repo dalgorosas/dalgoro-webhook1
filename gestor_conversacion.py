@@ -390,6 +390,8 @@ def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual):
                     estado["fase"] = "esperando_cita"
                     guardar_estado(chat_id, estado)
                     registrar_mensaje(chat_id, mensaje)
+
+                    # 🚫 Prevenir ejecución de registro en este mismo ciclo
                     return obtener_respuesta_por_actividad(estado.get("actividad", "otros"), "cierre")
 
             else:
@@ -426,15 +428,12 @@ def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual):
                     return obtener_respuesta_por_actividad(estado.get("actividad", "otros"), "salida_ambigua")
 
             elif intencion == "afirmacion_suave":
-                estado["intentos_aclaracion"] = 0  # ✅ Reinicia contador
+                estado["intentos_aclaracion"] = 0
                 estado["etapa"] = "cierre"
                 estado["fase"] = "esperando_cita"
                 guardar_estado(chat_id, estado)
                 registrar_mensaje(chat_id, mensaje)
-                return obtener_respuesta_por_actividad(
-                    estado.get("actividad", "otros"),
-                    "cierre"
-                )
+                return obtener_respuesta_por_actividad(...)
 
             elif intencion in ["pregunta_abierta", "mencion_permiso", "indefinido"]:
                 guardar_estado(chat_id, estado)
