@@ -39,8 +39,13 @@ def registrar_cita(chat_id, fecha, hora, ubicacion=None, mensaje="", estado=None
     ubicacion_segura = ubicacion or ""
     modalidad = "Finca" if "finca" in ubicacion_segura.lower() else "Oficina"
 
-    # ✅ Usamos primero el mensaje recibido directamente, luego el del estado, y nunca dejamos vacío
-    mensaje_original = mensaje or estado.get("ultimo_mensaje_procesado", "(sin mensaje)")
+    # ✅ Solo registrar el mensaje si proviene de la etapa 'cierre' o 'aclaracion_cierre'
+    etapa_actual = estado.get("etapa", "")
+    if etapa_actual in ["cierre", "aclaracion_cierre"]:
+        mensaje_original = mensaje or estado.get("ultimo_mensaje_procesado", "(sin mensaje)")
+    else:
+        mensaje_original = ""  # No registrar ningún mensaje como observación
+
     import re
 
     # Limpia el número dejando solo dígitos
