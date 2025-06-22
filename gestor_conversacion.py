@@ -546,6 +546,7 @@ def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual):
                 mensaje=mensaje_observacion,
                 estado=estado
             )
+            logger.info("📤 Registro de cita enviado con: %s | %s | %s | %s", fecha, hora, ubicacion, mensaje_observacion)
 
             # Si fecha y hora están completas, avanzamos a 'agradecimiento'
             if fecha and hora:
