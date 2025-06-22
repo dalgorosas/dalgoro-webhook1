@@ -229,7 +229,12 @@ def registrar_cita_en_hoja(contacto, fecha_cita, hora, modalidad, lugar, observa
 
         # 🧼 Limpieza del número de contacto
         contacto = contacto.replace("@c.us", "").strip()
-        
+
+        # 🔍 Diagnóstico antes de guardar
+        logger.info("🧼 Contacto final limpio para hoja: %s", contacto)
+        print("🧾 Fila final a registrar en hoja:", [contacto, fecha_cita, hora, modalidad, lugar, observaciones])
+
+        # ✅ Registro
         nueva_fila = [contacto, fecha_cita, hora, modalidad, lugar, observaciones]
         logger.info("📝 Registrando nueva fila: %s", nueva_fila)
         hoja.append_row(nueva_fila)

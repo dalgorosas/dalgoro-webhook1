@@ -538,6 +538,7 @@ def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual):
             etapa_actual = estado.get("etapa", "")
             mensaje_observacion = f"Mensaje original: {mensaje}" if etapa_actual in ["cierre", "aclaracion_cierre"] else ""
 
+            chat_id = chat_id.replace("@c.us", "").strip()  # ✅ Limpieza aquí
             registrar_cita(
                 chat_id=chat_id,
                 fecha=fecha,
