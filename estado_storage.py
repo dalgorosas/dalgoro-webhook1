@@ -12,6 +12,9 @@ logger = logging.getLogger(__name__)
 # Ruta del archivo de estado
 db_path = 'estado_usuarios.json'
 
+def limpiar_chat_id(chat_id):
+    return chat_id.replace("@c.us", "").strip()
+
 def cargar_db():
     if not os.path.exists(db_path):
         logger.info("📂 No existe estado_usuarios.json. Intentando reconstruir desde Sheets...")
@@ -47,7 +50,9 @@ Conversacion = Query()
 
 def obtener_estado(chat_id):
     logger.debug("🔎 Buscando estado para: %s", chat_id)
+    chat_id = limpiar_chat_id(chat_id)
     raw_resultado = db.get(Conversacion.chat_id == chat_id)
+
     resultado = dict(raw_resultado) if raw_resultado else None
 
     if resultado:
@@ -69,6 +74,8 @@ def obtener_estado(chat_id):
         return nuevo
 
 def reiniciar_estado(chat_id):
+    chat_id = limpiar_chat_id(chat_id)
+
     logger.info("🗑 Reiniciando estado para %s", chat_id)
     db.remove(Conversacion.chat_id == chat_id)
     guardar_estado(chat_id, {
@@ -80,6 +87,8 @@ def reiniciar_estado(chat_id):
     })
 
 def obtener_estado_seguro(chat_id):
+    chat_id = limpiar_chat_id(chat_id)
+
     try:
         return obtener_estado(chat_id)
     except Exception as e:
@@ -94,6 +103,7 @@ def obtener_estado_seguro(chat_id):
 
        
 def guardar_estado(chat_id, nuevo_estado):
+    chat_id = limpiar_chat_id(chat_id)
     nuevo_estado["chat_id"] = chat_id
     nuevo_estado["ultima_interaccion"] = datetime.now(ZONA_HORARIA_EC).isoformat()
     logger.debug("📦 Estado a guardar en DB para %s: %s", chat_id, nuevo_estado)
@@ -105,10 +115,14 @@ def guardar_estado(chat_id, nuevo_estado):
         logger.warning("⚠️ No se pudo guardar en Sheets: %s", e)
 
 def mensaje_ya_procesado(chat_id, mensaje_id):
+    chat_id = limpiar_chat_id(chat_id)
+
     estado = obtener_estado(chat_id)
     return estado.get("ultimo_mensaje_id") == mensaje_id
 
 def registrar_mensaje_procesado(chat_id, mensaje_id):
+    chat_id = limpiar_chat_id(chat_id) 
+
     estado = obtener_estado(chat_id)
     estado["ultimo_mensaje_id"] = mensaje_id
     guardar_estado(chat_id, estado)

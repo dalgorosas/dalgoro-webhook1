@@ -259,6 +259,7 @@ def bloquear_chat(chat_id, segundos=1.5):
 
 def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual):
     try:
+        chat_id = chat_id.replace("@c.us", "").strip()  # ✅ Limpieza universal
         estado = obtener_estado_seguro(chat_id)
         etapa_original = estado.get("etapa")  # ✅ Guardamos la etapa antes de cualquier cambio
 
@@ -545,7 +546,6 @@ def manejar_conversacion(chat_id, mensaje, actividad, fecha_actual):
             etapa_actual = estado.get("etapa", "")
             mensaje_observacion = f"Mensaje original: {mensaje}" if etapa_actual in ["cierre", "aclaracion_cierre"] else ""
 
-            chat_id = chat_id.replace("@c.us", "").strip()  # ✅ Limpieza aquí
             registrar_cita(
                 chat_id=chat_id,
                 fecha=fecha,
